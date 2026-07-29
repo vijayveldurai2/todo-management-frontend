@@ -61,6 +61,8 @@ export interface Task {
   column_id?: string;
   position?: number;
   storyPoints?: number;
+  display_id?: string;
+  sequence_number?: number;
   title: string;
   slug?: string;
   category: string;
@@ -108,6 +110,8 @@ export interface Project {
   id: string;
   workspaceId?: string;
   name: string;
+  prefix?: string;
+  todo_counter?: number;
   slug?: string;
   category: string; // e.g. "DESIGN", "ENGINEERING", "OPERATIONS", "MARKETING"
   description: string;

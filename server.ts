@@ -88,7 +88,23 @@ async function startServer() {
     }
   });
 
+  // Validate Project Code Prefix
+  app.get('/api/workspaces/:workspaceSlug/projects/check-prefix/:prefix', (req, res) => {
+    const { workspaceSlug, prefix } = req.params;
+    const available = backendStore.isPrefixAvailable(workspaceSlug, prefix);
+    res.json({ available, prefix: prefix.toUpperCase().trim() });
+  });
+
   // Todos / Tasks
+  app.get('/api/workspaces/:workspaceSlug/projects/:projectSlug/todos/:displayId', (req, res) => {
+    const { workspaceSlug, projectSlug, displayId } = req.params;
+    const result = backendStore.getTaskByDisplayId(workspaceSlug, projectSlug, displayId);
+    if (!result) {
+      return res.status(404).json({ error: 'not_found', message: 'Todo not found' });
+    }
+    res.json(result.task);
+  });
+
   app.get('/api/workspaces/:workspaceSlug/projects/:projectSlug/boards/:boardSlug/todos', (req, res) => {
     const { workspaceSlug, projectSlug, boardSlug } = req.params;
     const boardData = backendStore.getBoardBySlug(workspaceSlug, projectSlug, boardSlug);

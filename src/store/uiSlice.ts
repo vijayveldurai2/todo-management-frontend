@@ -11,6 +11,7 @@ interface UIState {
   isCreateTaskModalOpen: boolean;
   isCreateBoardModalOpen: boolean;
   isSettingsModalOpen: boolean;
+  isShortcutsModalOpen: boolean;
 }
 
 const initialState: UIState = {
@@ -23,6 +24,7 @@ const initialState: UIState = {
   isCreateTaskModalOpen: false,
   isCreateBoardModalOpen: false,
   isSettingsModalOpen: false,
+  isShortcutsModalOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -56,6 +58,9 @@ const uiSlice = createSlice({
     setSettingsModalOpen: (state, action: PayloadAction<boolean>) => {
       state.isSettingsModalOpen = action.payload;
     },
+    setShortcutsModalOpen: (state, action: PayloadAction<boolean>) => {
+      state.isShortcutsModalOpen = action.payload;
+    },
   },
 });
 
@@ -69,6 +74,7 @@ export const {
   setCreateTaskModalOpen,
   setCreateBoardModalOpen,
   setSettingsModalOpen,
+  setShortcutsModalOpen,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

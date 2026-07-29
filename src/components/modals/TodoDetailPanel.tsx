@@ -8,12 +8,15 @@ import { NotFoundPage } from '../views/NotFoundPage';
 import { apiService } from '../../services/apiService';
 
 export const TodoDetailPanel: React.FC = () => {
-  const { workspaceSlug, projectSlug, boardSlug, todoSlug } = useParams<{
-    workspaceSlug: string;
-    projectSlug: string;
-    boardSlug: string;
-    todoSlug: string;
+  const { workspaceSlug, projectSlug, boardSlug, todoSlug, todoDisplayId } = useParams<{
+    workspaceSlug?: string;
+    projectSlug?: string;
+    boardSlug?: string;
+    todoSlug?: string;
+    todoDisplayId?: string;
   }>();
+
+  const targetIdOrSlug = todoDisplayId || todoSlug;
 
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -29,16 +32,30 @@ export const TodoDetailPanel: React.FC = () => {
 
   useEffect(() => {
     let isMounted = true;
-    if (!todoSlug) return;
+    if (!targetIdOrSlug) return;
 
     setIsLoading(true);
     setIsNotFound(false);
 
-    if (workspaceSlug && projectSlug && boardSlug) {
+    if (workspaceSlug && projectSlug) {
+      // Resolve task by display ID or slug within the project
       apiService
-        .getTaskBySlug(workspaceSlug, projectSlug, boardSlug, todoSlug)
+        .getTaskByDisplayId(workspaceSlug, projectSlug, targetIdOrSlug)
         .then((t) => {
           if (isMounted) {
+            setTask(t);
+            setIsLoading(false);
+          }
+        })
+        .catch(() => {
+          // Fallback if boardSlug provided
+          if (boardSlug) {
+            return apiService.getTaskBySlug(workspaceSlug, projectSlug, boardSlug, targetIdOrSlug);
+          }
+          throw new Error('not_found');
+        })
+        .then((t) => {
+          if (t && isMounted) {
             setTask(t);
             setIsLoading(false);
           }
@@ -55,7 +72,13 @@ export const TodoDetailPanel: React.FC = () => {
       apiService
         .getTasks()
         .then((allTasks) => {
-          const found = allTasks.find((t) => t.slug === todoSlug || t.id === todoSlug);
+          const target = targetIdOrSlug.toLowerCase();
+          const found = allTasks.find(
+            (t) =>
+              t.display_id?.toLowerCase() === target ||
+              t.slug?.toLowerCase() === target ||
+              t.id.toLowerCase() === target
+          );
           if (found && isMounted) {
             setTask(found);
             setIsLoading(false);
@@ -76,11 +99,13 @@ export const TodoDetailPanel: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [workspaceSlug, projectSlug, boardSlug, todoSlug]);
+  }, [workspaceSlug, projectSlug, boardSlug, targetIdOrSlug]);
 
   const handleClose = () => {
     if (workspaceSlug && projectSlug && boardSlug) {
       navigate(`/${workspaceSlug}/${projectSlug}/${boardSlug}`);
+    } else if (workspaceSlug && projectSlug) {
+      navigate(`/${workspaceSlug}/${projectSlug}`);
     } else {
       navigate(-1);
     }
@@ -181,7 +206,12 @@ export const TodoDetailPanel: React.FC = () => {
         {/* Drawer Header */}
         <div className="p-4 md:p-6 border-b border-[var(--border-outline-variant)] flex items-center justify-between gap-4 bg-[var(--bg-surface-container-low)]">
           <div className="flex-1 overflow-hidden">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              {task.display_id && (
+                <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold tracking-wider bg-[var(--bg-surface-container-highest)] text-[var(--text-on-surface)] border border-[var(--border-outline-variant)] shadow-2xs">
+                  {task.display_id}
+                </span>
+              )}
               <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[var(--color-primary-fixed)] text-[var(--color-primary)]">
                 {task.category}
               </span>

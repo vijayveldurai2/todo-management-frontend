@@ -31,11 +31,11 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ board }) => {
   const overdueCount = tasks.filter((t) => t.status === 'Overdue' || t.status === 'Pending').length || 4;
 
   const handleRowClick = (task: Task) => {
-    const todoSlug = task.slug || task.id;
+    const todoIdentifier = task.display_id || task.slug || task.id;
     if (workspaceSlug && projectSlug && boardSlug) {
-      navigate(`/${workspaceSlug}/${projectSlug}/${boardSlug}/todo/${todoSlug}`);
+      navigate(`/${workspaceSlug}/${projectSlug}/${boardSlug}/todo/${todoIdentifier}`);
     } else {
-      navigate(`todo/${todoSlug}`);
+      navigate(`todo/${todoIdentifier}`);
     }
   };
 
@@ -132,7 +132,14 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ board }) => {
                   className="hover:bg-[var(--bg-surface-container-high)] transition-colors cursor-pointer group"
                 >
                   <td className="py-3.5 px-4 font-semibold group-hover:text-[var(--color-primary)] transition-colors">
-                    {task.title}
+                    <div className="flex items-center gap-2">
+                      {task.display_id && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider bg-[var(--bg-surface-container-high)] text-[var(--text-on-surface)] border border-[var(--border-outline-variant)] shrink-0">
+                          {task.display_id}
+                        </span>
+                      )}
+                      <span>{task.title}</span>
+                    </div>
                   </td>
                   <td className="py-3.5 px-4 text-[var(--text-on-surface-variant)] font-medium">
                     {task.category}

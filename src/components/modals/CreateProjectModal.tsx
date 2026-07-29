@@ -65,7 +65,9 @@ const PRESET_SUGGESTIONS: ProjectMember[] = [
 ];
 
 export const CreateProjectModal: React.FC = () => {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { workspaceSlug = 'main-workspace' } = useParams<{ workspaceSlug: string }>();
   const { isCreateProjectModalOpen } = useAppSelector((state) => state.ui);
   const { user } = useAppSelector((state) => state.auth);
 
@@ -73,10 +75,62 @@ export const CreateProjectModal: React.FC = () => {
 
   // Form State
   const [name, setName] = useState('');
+  const [prefix, setPrefix] = useState('');
+  const [prefixError, setPrefixError] = useState('');
+  const [isPrefixEdited, setIsPrefixEdited] = useState(false);
   const [category, setCategory] = useState('DESIGN');
   const [description, setDescription] = useState('');
   const [selectedColor, setSelectedColor] = useState('#3525cd');
   const [selectedIcon, setSelectedIcon] = useState('palette');
+
+  const { projects: existingProjects } = useAppSelector((state) => state.projects);
+
+  const generateSuggestedPrefix = (projectName: string): string => {
+    if (!projectName.trim()) return '';
+    const clean = projectName.trim().replace(/[^a-zA-Z0-9\s]/g, '');
+    const words = clean.split(/\s+/).filter(Boolean);
+    let code = '';
+    if (words.length >= 2) {
+      code = words.map((w) => w[0]).join('').toUpperCase();
+    } else if (words.length === 1) {
+      const w = words[0].toUpperCase();
+      code = w.length >= 2 ? w.slice(0, 2) : w + 'X';
+    }
+    code = code.replace(/[^A-Z0-9]/g, '');
+    if (code.length < 2) code = (code + 'PR').slice(0, 2);
+    return code.slice(0, 6);
+  };
+
+  const validatePrefix = (value: string): boolean => {
+    const clean = value.toUpperCase().trim();
+    if (!clean) {
+      setPrefixError('Project code is required.');
+      return false;
+    }
+    if (!/^[A-Z0-9]{2,6}$/.test(clean)) {
+      setPrefixError('Must be 2–6 uppercase letters or numbers.');
+      return false;
+    }
+    const isTaken = existingProjects.some(
+      (p) => p.prefix?.toUpperCase() === clean
+    );
+    if (isTaken) {
+      setPrefixError(`${clean} is already used by another project`);
+      return false;
+    }
+    setPrefixError('');
+    return true;
+  };
+
+  const handleNameChange = (val: string) => {
+    setName(val);
+    if (!isPrefixEdited) {
+      const suggested = generateSuggestedPrefix(val);
+      setPrefix(suggested);
+      if (suggested) validatePrefix(suggested);
+      else setPrefixError('');
+    }
+  };
 
   // Members State
   const [members, setMembers] = useState<ProjectMember[]>([
@@ -160,16 +214,19 @@ export const CreateProjectModal: React.FC = () => {
     );
   };
 
-  const navigate = useNavigate();
-  const { workspaceSlug = 'main-workspace' } = useParams<{ workspaceSlug: string }>();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
+    if (!validatePrefix(prefix)) {
+      setActiveTab('general');
+      return;
+    }
+
     const action = await dispatch(
       createNewProject({
         name: name.trim(),
+        prefix: prefix.toUpperCase().trim(),
         category,
         description: description.trim() || 'Custom project workspace with assigned team roles.',
         color: selectedColor,
@@ -189,6 +246,9 @@ export const CreateProjectModal: React.FC = () => {
       const projectSlug = action.payload.slug || action.payload.id;
       dispatch(setCreateProjectModalOpen(false));
       setName('');
+      setPrefix('');
+      setPrefixError('');
+      setIsPrefixEdited(false);
       setDescription('');
       setActiveTab('general');
       navigate(`/${workspaceSlug}/${projectSlug}`);
@@ -246,19 +306,55 @@ export const CreateProjectModal: React.FC = () => {
           {/* TAB 1: GENERAL INFO */}
           {activeTab === 'general' && (
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)] mb-1">
-                  Project Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Brand Refresh V2"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface-container-low)] border border-[var(--border-outline-variant)] text-sm text-[var(--text-on-surface)] outline-none focus:border-[var(--color-primary)] transition-colors"
-                />
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)] mb-1">
+                    Project Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    placeholder="e.g. Website Redesign"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface-container-low)] border border-[var(--border-outline-variant)] text-sm text-[var(--text-on-surface)] outline-none focus:border-[var(--color-primary)] transition-colors"
+                  />
+                </div>
+
+                <div className="col-span-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)] mb-1">
+                    Project Code *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={prefix}
+                    onChange={(e) => {
+                      setIsPrefixEdited(true);
+                      const upper = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                      setPrefix(upper);
+                      validatePrefix(upper);
+                    }}
+                    onBlur={() => validatePrefix(prefix)}
+                    placeholder="e.g. WR"
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface-container-low)] border text-sm font-mono font-bold uppercase tracking-wider text-[var(--text-on-surface)] outline-none transition-colors ${
+                      prefixError ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-outline-variant)] focus:border-[var(--color-primary)]'
+                    }`}
+                  />
+                </div>
               </div>
+
+              {prefixError ? (
+                <p className="text-xs text-red-500 font-medium flex items-center gap-1 -mt-2">
+                  <span className="material-symbols-outlined text-sm">error</span>
+                  {prefixError}
+                </p>
+              ) : (
+                <p className="text-[11px] text-[var(--text-on-surface-variant)] -mt-2">
+                  2–6 uppercase characters (e.g. WR for Website Redesign). Used for all task IDs (WR-1, WR-2). Immutable after creation.
+                </p>
+              )}
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)] mb-1">

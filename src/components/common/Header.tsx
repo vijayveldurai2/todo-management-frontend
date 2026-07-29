@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { setActiveView, setSearchQuery, setSettingsModalOpen } from '../../store/uiSlice';
+import { setActiveView, setSearchQuery, setSettingsModalOpen, setShortcutsModalOpen } from '../../store/uiSlice';
 import { toggleDarkMode, setColorTheme } from '../../store/themeSlice';
 import { setOAuthModalOpen, logoutUser } from '../../store/authSlice';
 import { ThemeColor, ActiveView } from '../../types';
@@ -157,6 +157,15 @@ export const Header: React.FC = () => {
           <span className="material-symbols-outlined text-xl">
             {mode === 'dark' ? 'light_mode' : 'dark_mode'}
           </span>
+        </button>
+
+        {/* Keyboard Shortcuts button */}
+        <button
+          onClick={() => dispatch(setShortcutsModalOpen(true))}
+          title="Keyboard Shortcuts (? or Cmd+/)"
+          className="p-2 rounded-full hover:bg-[var(--bg-surface-container-high)] text-[var(--text-on-surface-variant)] transition-colors cursor-pointer flex items-center justify-center hidden sm:flex"
+        >
+          <span className="material-symbols-outlined text-xl">keyboard</span>
         </button>
 
         {/* Settings button */}

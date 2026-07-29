@@ -183,6 +183,16 @@ export const apiService = {
     return fallback.task;
   },
 
+  async getTaskByDisplayId(workspaceSlug: string, projectSlug: string, displayId: string): Promise<Task> {
+    const apiRes = await fetchJson<Task>(
+      `/api/workspaces/${workspaceSlug}/projects/${projectSlug}/todos/${displayId}`
+    );
+    if (apiRes) return apiRes;
+    const fallback = backendStore.getTaskByDisplayId(workspaceSlug, projectSlug, displayId);
+    if (!fallback) throw new Error('not_found');
+    return fallback.task;
+  },
+
   async createTask(
     workspaceSlugOrTaskData: string | Partial<Task>,
     projectSlugOrOptionalTaskData?: string | Partial<Task>,

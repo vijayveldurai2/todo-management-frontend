@@ -9,10 +9,13 @@ import { CreateBoardModal } from '../modals/CreateBoardModal';
 import { CreateTaskModal } from '../modals/CreateTaskModal';
 import { SettingsModal } from '../modals/SettingsModal';
 import { OAuthModal } from '../modals/OAuthModal';
+import { KeyboardShortcutsModal } from '../modals/KeyboardShortcutsModal';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { apiService } from '../../services/apiService';
 import { Workspace } from '../../types';
 
 export const WorkspaceLayout: React.FC = () => {
+  useKeyboardShortcuts();
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [isNotFound, setIsNotFound] = useState(false);
@@ -92,6 +95,7 @@ export const WorkspaceLayout: React.FC = () => {
       <CreateTaskModal />
       <SettingsModal />
       <OAuthModal />
+      <KeyboardShortcutsModal />
     </div>
   );
 };

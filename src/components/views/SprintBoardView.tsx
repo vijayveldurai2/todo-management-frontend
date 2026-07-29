@@ -149,11 +149,11 @@ export const SprintBoardView: React.FC<SprintBoardViewProps> = ({ board }) => {
   const progressPercent = totalCommittedPoints > 0 ? Math.round((completedPoints / totalCommittedPoints) * 100) : 0;
 
   const handleCardClick = (task: Task) => {
-    const todoSlug = task.slug || task.id;
+    const todoIdentifier = task.display_id || task.slug || task.id;
     if (workspaceSlug && projectSlug && boardSlug) {
-      navigate(`/${workspaceSlug}/${projectSlug}/${boardSlug}/todo/${todoSlug}`);
+      navigate(`/${workspaceSlug}/${projectSlug}/${boardSlug}/todo/${todoIdentifier}`);
     } else {
-      navigate(`todo/${todoSlug}`);
+      navigate(`todo/${todoIdentifier}`);
     }
   };
 
@@ -586,9 +586,16 @@ const CardItem: React.FC<{ task: Task; isOverlay?: boolean }> = ({ task, isOverl
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[var(--color-primary-fixed)] text-[var(--color-primary)]">
-          {task.category}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {task.display_id && (
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider bg-[var(--bg-surface-container-high)] text-[var(--text-on-surface)] border border-[var(--border-outline-variant)]">
+              {task.display_id}
+            </span>
+          )}
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[var(--color-primary-fixed)] text-[var(--color-primary)]">
+            {task.category}
+          </span>
+        </div>
 
         <div className="flex items-center gap-1.5">
           {task.storyPoints !== undefined && (

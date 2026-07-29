@@ -121,10 +121,16 @@ const router = createBrowserRouter([
         element: <ProjectLayout />,
         children: [
           { index: true, element: <ProjectDetailsView /> },
+          // Standalone deep link — resolves via project + displayId alone, no board needed in path
+          { path: 'todo/:todoDisplayId', element: <TodoDetailPanel /> },
+          { path: 'todo/:todoSlug', element: <TodoDetailPanel /> },
           {
             path: ':boardSlug',
             element: <BoardView />,
-            children: [{ path: 'todo/:todoSlug', element: <TodoDetailPanel /> }],
+            children: [
+              { path: 'todo/:todoDisplayId', element: <TodoDetailPanel /> },
+              { path: 'todo/:todoSlug', element: <TodoDetailPanel /> },
+            ],
           },
         ],
       },

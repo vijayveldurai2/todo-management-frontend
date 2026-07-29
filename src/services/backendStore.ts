@@ -2,13 +2,31 @@ import { Workspace, Project, Board, Task, Column } from '../types';
 import { INITIAL_WORKSPACES, INITIAL_PROJECTS, INITIAL_BOARDS, INITIAL_TASKS, TABLE_TASKS } from '../data/mockData';
 import { createUniqueSlug, generateBaseSlug, getRandomShortSuffix } from './slugService';
 
+export function generateSuggestedPrefix(name: string): string {
+  if (!name || !name.trim()) return 'PR';
+  const clean = name.trim().replace(/[^a-zA-Z0-9\s]/g, '');
+  const words = clean.split(/\s+/).filter(Boolean);
+  let code = '';
+  if (words.length >= 2) {
+    code = words.map((w) => w[0]).join('').toUpperCase();
+  } else if (words.length === 1) {
+    const w = words[0].toUpperCase();
+    code = w.length >= 2 ? w.slice(0, 2) : w + 'X';
+  }
+  code = code.replace(/[^A-Z0-9]/g, '');
+  if (code.length < 2) code = (code + 'PR').slice(0, 2);
+  return code.slice(0, 6);
+}
+
 // Backend memory/in-process data store initialized with default data with guaranteed unique slugs
 
 let workspaces: Workspace[] = [...INITIAL_WORKSPACES];
 
-let projects: Project[] = INITIAL_PROJECTS.map((p, idx) => ({
+let projects: Project[] = INITIAL_PROJECTS.map((p) => ({
   ...p,
   workspaceId: p.workspaceId || 'ws-1',
+  prefix: p.prefix || generateSuggestedPrefix(p.name),
+  todo_counter: p.todo_counter || 100,
   slug: p.slug || generateBaseSlug(p.name),
 }));
 
@@ -30,9 +48,15 @@ let tasks: Task[] = [...INITIAL_TASKS, ...TABLE_TASKS].map((t, idx) => {
   else if (t.status === 'In Review') colId = 'col-in-review';
   else if (t.status === 'Done' || t.status === 'Completed') colId = 'col-done';
 
+  const proj = projects.find((p) => p.id === t.projectId) || projects[0];
+  const seq = t.sequence_number || (100 + idx + 1);
+  const display_id = t.display_id || `${proj.prefix}-${seq}`;
+
   return {
     ...t,
-    slug: t.slug || `${generateBaseSlug(t.title)}-${getRandomShortSuffix()}`,
+    sequence_number: seq,
+    display_id,
+    slug: display_id,
     column_id: t.column_id || colId,
     position: t.position !== undefined ? t.position : (idx + 1) * 1000,
   };
@@ -84,6 +108,21 @@ export const backendStore = {
     const workspace = this.getWorkspaceBySlug(workspaceSlug) || workspaces[0];
     const name = newProjectData.name || 'Untitled Project';
 
+    const rawPrefix = newProjectData.prefix || generateSuggestedPrefix(name);
+    const prefix = rawPrefix.toUpperCase().trim().replace(/[^A-Z0-9]/g, '');
+
+    if (!prefix || prefix.length < 2 || prefix.length > 6) {
+      throw new Error('Project Code must be between 2 and 6 uppercase alphanumeric characters.');
+    }
+
+    // Check prefix uniqueness per workspace
+    const isPrefixTaken = projects.some(
+      (p) => (p.workspaceId === workspace.id || workspaceSlug === 'main-workspace') && p.prefix?.toUpperCase() === prefix
+    );
+    if (isPrefixTaken) {
+      throw new Error(`${prefix} is already used by another project`);
+    }
+
     const slug = await createUniqueSlug(name, (s) =>
       projects.some((p) => p.workspaceId === workspace.id && p.slug === s)
     );
@@ -92,6 +131,8 @@ export const backendStore = {
       id: `proj-${Date.now()}`,
       workspaceId: workspace.id,
       name,
+      prefix,
+      todo_counter: 0,
       slug,
       category: newProjectData.category || 'GENERAL',
       description: newProjectData.description || '',
@@ -102,7 +143,7 @@ export const backendStore = {
       icon: newProjectData.icon || 'folder',
       template: newProjectData.template || 'Empty Project',
       updatedAt: 'Just now',
-      contributors: [
+      contributors: newProjectData.contributors || [
         {
           id: 'u-1',
           name: 'Vijay Kumar',
@@ -115,6 +156,15 @@ export const backendStore = {
 
     projects.unshift(newProject);
     return newProject;
+  },
+
+  isPrefixAvailable(workspaceSlug: string, prefix: string): boolean {
+    const workspace = this.getWorkspaceBySlug(workspaceSlug) || workspaces[0];
+    const clean = prefix.toUpperCase().trim();
+    if (!clean || clean.length < 2 || clean.length > 6) return false;
+    return !projects.some(
+      (p) => (p.workspaceId === workspace.id || workspaceSlug === 'main-workspace') && p.prefix?.toUpperCase() === clean
+    );
   },
 
   // BOARDS
@@ -174,12 +224,36 @@ export const backendStore = {
     return res;
   },
 
+  getTaskByDisplayId(workspaceSlug: string, projectSlug: string, displayId: string): { workspace: Workspace; project: Project; board?: Board; task: Task } | null {
+    const projData = this.getProjectBySlug(workspaceSlug, projectSlug);
+    if (!projData) return null;
+    const { workspace, project } = projData;
+
+    const target = displayId.toLowerCase();
+    const task = tasks.find(
+      (t) => t.projectId === project.id && (
+        t.display_id?.toLowerCase() === target ||
+        t.slug?.toLowerCase() === target ||
+        t.id.toLowerCase() === target
+      )
+    );
+    if (!task) return null;
+
+    const board = boards.find((b) => b.id === task.boardId || b.id === task.sprintId) || boards.find((b) => b.projectId === project.id);
+    return { workspace, project, board, task };
+  },
+
   getTaskBySlug(workspaceSlug: string, projectSlug: string, boardSlug: string, todoSlug: string): { workspace: Workspace; project: Project; board: Board; task: Task } | null {
     const boardData = this.getBoardBySlug(workspaceSlug, projectSlug, boardSlug);
     if (!boardData) return null;
     const { workspace, project, board } = boardData;
+    const target = todoSlug.toLowerCase();
     const task = tasks.find(
-      (t) => (t.boardId === board.id || t.sprintId === board.id) && t.slug === todoSlug
+      (t) => (t.boardId === board.id || t.sprintId === board.id) && (
+        t.display_id?.toLowerCase() === target ||
+        t.slug?.toLowerCase() === target ||
+        t.id.toLowerCase() === target
+      )
     );
     if (!task) return null;
     return { workspace, project, board, task };
@@ -190,21 +264,23 @@ export const backendStore = {
     if (!boardData) throw new Error('Board not found');
     const { project, board } = boardData;
 
+    // Atomic increment project's todo_counter
+    project.todo_counter = (project.todo_counter || 0) + 1;
+    const sequenceNumber = project.todo_counter;
+    const prefix = project.prefix || generateSuggestedPrefix(project.name);
+    const displayId = `${prefix}-${sequenceNumber}`;
+
     const title = taskData.title || 'New Task';
-    // For todos, use a short random suffix (titles collide constantly)
-    const slug = await createUniqueSlug(
-      title,
-      (s) => tasks.some((t) => (t.boardId === board.id || t.sprintId === board.id) && t.slug === s),
-      true // isTodo
-    );
 
     const newTask: Task = {
       id: `task-${Date.now()}`,
       projectId: project.id,
       boardId: board.id,
       sprintId: board.type === 'Sprint' ? board.id : undefined,
+      sequence_number: sequenceNumber,
+      display_id: displayId,
       title,
-      slug,
+      slug: displayId,
       category: taskData.category || 'General',
       description: taskData.description || '',
       status: taskData.status || 'To Do',

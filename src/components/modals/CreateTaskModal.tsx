@@ -95,11 +95,11 @@ export const CreateTaskModal: React.FC = () => {
     );
 
     if (createNewTask.fulfilled.match(action)) {
-      const taskSlug = action.payload.slug || action.payload.id;
+      const taskIdentifier = action.payload.display_id || action.payload.slug || action.payload.id;
       dispatch(setCreateTaskModalOpen(false));
       setTitle('');
       setDescription('');
-      navigate(`/${workspaceSlug}/${projectSlug}/${boardSlug}/todo/${taskSlug}`);
+      navigate(`/${workspaceSlug}/${projectSlug}/${boardSlug}/todo/${taskIdentifier}`);
     }
   };
 
