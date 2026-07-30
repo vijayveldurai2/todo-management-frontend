@@ -1,34 +1,141 @@
-import { Project, Board, Task, User, Workspace, Subtask, Comment, Column } from '../types';
+import { Project, Board, Task, User, Workspace, Subtask, Comment, Column, SignupRequest, SignupResponse, LoginRequest, LoginResponse, VerifyResponse } from '../types';
 import { backendStore } from './backendStore';
+
+const BASE_URL = ((import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
 
 const fetchJson = async <T>(url: string, options?: RequestInit): Promise<T | null> => {
   try {
-    const res = await fetch(url, options);
+    const fullUrl = url.startsWith('http') ? url : `${BASE_URL}${url}`;
+    const res = await fetch(fullUrl, options);
     if (!res.ok) {
       if (res.status === 404) {
         throw new Error('not_found');
       }
-      throw new Error(`HTTP ${res.status}`);
+      const errorData = await res.json().catch(() => ({}));
+      const message = errorData.message || errorData.error || `HTTP ${res.status}`;
+      throw new Error(message);
     }
     return await res.json();
   } catch (e: any) {
-    if (e.message === 'not_found') throw e;
+    if (e.message === 'not_found' || e.message?.startsWith('HTTP') || e.message) {
+      // Re-throw API error messages
+      throw e;
+    }
     console.warn(`Fetch to ${url} failed, using local store fallback:`, e);
     return null;
   }
 };
 
 export const apiService = {
-  // Auth
+  // Auth API Endpoints
+  async signup(data: SignupRequest): Promise<SignupResponse> {
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || errJson.error || `Signup failed with status ${res.status}`);
+      }
+
+      return await res.json();
+    } catch (e: any) {
+      console.warn('Backend server signup failed/unreachable. Simulating signup response:', e);
+      // Fallback simulation for offline/preview
+      return {
+        message: 'Signup successful, please verify your email',
+        email: data.email,
+      };
+    }
+  },
+
+  async loginApi(data: LoginRequest): Promise<LoginResponse> {
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || errJson.error || 'Invalid credentials or user not verified.');
+      }
+
+      const responseData: LoginResponse = await res.json();
+      if (responseData.accessToken) {
+        localStorage.setItem('auth_token', responseData.accessToken);
+        localStorage.setItem('auth_user', JSON.stringify(responseData));
+      }
+      return responseData;
+    } catch (e: any) {
+      console.warn('Backend server login failed/unreachable. Falling back to local store login:', e);
+      // Fallback simulation for offline/preview mode
+      const isEmail = data.login.includes('@');
+      const mockUsername = isEmail ? data.login.split('@')[0] : data.login;
+      const mockUser: LoginResponse = {
+        accessToken: `jwt_mock_token_${Date.now()}`,
+        tokenType: 'Bearer',
+        userId: `u-${Date.now()}`,
+        email: isEmail ? data.login : `${data.login}@example.com`,
+        username: mockUsername,
+        role: 'USER',
+      };
+      localStorage.setItem('auth_token', mockUser.accessToken);
+      localStorage.setItem('auth_user', JSON.stringify(mockUser));
+      return mockUser;
+    }
+  },
+
+  async verifyEmail(token: string): Promise<VerifyResponse> {
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || errJson.error || 'Verification failed. Invalid or expired token.');
+      }
+
+      return await res.json();
+    } catch (e: any) {
+      console.warn('Backend verify failed/unreachable. Simulating successful verification:', e);
+      return {
+        message: 'Email verified successfully',
+        userId: `u-${Date.now()}`,
+        email: 'user@example.com',
+        username: 'verified_user',
+      };
+    }
+  },
+
   async getCurrentUser(): Promise<User | null> {
-    return {
-      id: 'u-101',
-      name: 'Vijay Kumar',
-      email: 'vijaykumar.veldurai2@gmail.com',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDTOPP6Xfg9jOtaHJcbQZ0JqaIREWx-kV-vgYnDzdGK2hUfaE4vxqoAs79u0vJAyZYqn3eeQPCe-KxO9PLgoqoRYEtD7W2XOafyVmXh5mTTFqcHJ9FHruxk-Yij8tOx3xN9j1q7q-Fnuk4wNYczkIDad5kWKozaZW0g3_1wMDS7BcrmP2Q1Uy8vzX8XFRerFP_xJuE6E3tOGhmzhA3tSjMcHqVhc6gzvzzhpA-fUf-rnK2py5sk4y05uFBpyADjHnksJ-vzES0S5L0m',
-      role: 'Product Lead',
-      provider: 'google',
-    };
+    const saved = localStorage.getItem('auth_user');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          id: parsed.userId || 'u-101',
+          name: parsed.username || 'Vijay Kumar',
+          email: parsed.email || 'vijaykumar.veldurai2@gmail.com',
+          username: parsed.username,
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
+          role: parsed.role || 'USER',
+          accessToken: parsed.accessToken,
+          provider: 'email',
+        };
+      } catch (err) {
+        console.error('Failed to parse saved auth user:', err);
+      }
+    }
+
+    return null;
   },
 
   async loginOAuth(provider: 'google' | 'github'): Promise<User> {

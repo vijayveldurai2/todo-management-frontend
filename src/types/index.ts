@@ -6,11 +6,45 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  username?: string;
   avatar: string;
   role?: string;
   provider?: 'google' | 'github' | 'email';
   accessToken?: string;
   expiresAt?: number;
+}
+
+export interface SignupRequest {
+  email: string;
+  username: string;
+  password: string;
+  name: string;
+}
+
+export interface SignupResponse {
+  message: string;
+  email: string;
+}
+
+export interface LoginRequest {
+  login: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  tokenType: string;
+  userId: string;
+  email: string;
+  username: string;
+  role?: string;
+}
+
+export interface VerifyResponse {
+  message: string;
+  userId: string;
+  email: string;
+  username: string;
 }
 
 export interface Subtask {

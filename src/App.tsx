@@ -15,6 +15,7 @@ import { BoardView } from './components/views/BoardView';
 import { TodoDetailPanel } from './components/modals/TodoDetailPanel';
 import { NotFoundPage } from './components/views/NotFoundPage';
 import { LoginView } from './components/views/LoginView';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { TaskListView } from './components/views/TaskListView';
 import { KanbanBoardView } from './components/views/KanbanBoardView';
 import { SprintBoardView } from './components/views/SprintBoardView';
@@ -49,96 +50,97 @@ const CalendarRoute = () => (
 );
 
 const router = createBrowserRouter([
-  // Static Authentication Handles
-  { path: '/', element: <WorkspacePicker /> },
+  // Public Authentication Handles
   { path: '/login', element: <LoginView initialMode="login" /> },
   { path: '/signup', element: <LoginView initialMode="signup" /> },
 
-  // Static Application View Handles
+  // Protected Application Handles
   {
-    path: '/workspace',
-    element: <WorkspaceLayout />,
-    children: [{ index: true, element: <WorkspaceView /> }],
-  },
-  {
-    path: '/projects',
-    element: <WorkspaceLayout />,
-    children: [{ index: true, element: <WorkspaceView /> }],
-  },
-  {
-    path: '/tasks',
-    element: <WorkspaceLayout />,
+    element: <ProtectedRoute />,
     children: [
+      { path: '/', element: <WorkspacePicker /> },
       {
-        path: '',
-        element: <TaskListRoute />,
-        children: [{ path: 'todo/:todoSlug', element: <TodoDetailPanel /> }],
+        path: '/workspace',
+        element: <WorkspaceLayout />,
+        children: [{ index: true, element: <WorkspaceView /> }],
       },
-    ],
-  },
-  {
-    path: '/kanban',
-    element: <WorkspaceLayout />,
-    children: [
       {
-        path: '',
-        element: <KanbanRoute />,
-        children: [{ path: 'todo/:todoSlug', element: <TodoDetailPanel /> }],
+        path: '/projects',
+        element: <WorkspaceLayout />,
+        children: [{ index: true, element: <WorkspaceView /> }],
       },
-    ],
-  },
-  {
-    path: '/sprint',
-    element: <WorkspaceLayout />,
-    children: [
       {
-        path: '',
-        element: <SprintRoute />,
-        children: [{ path: 'todo/:todoSlug', element: <TodoDetailPanel /> }],
-      },
-    ],
-  },
-  {
-    path: '/calendar',
-    element: <WorkspaceLayout />,
-    children: [
-      {
-        path: '',
-        element: <CalendarRoute />,
-        children: [{ path: 'todo/:todoSlug', element: <TodoDetailPanel /> }],
-      },
-    ],
-  },
-
-  // Dynamic Slug Routing (/:workspaceSlug /:workspaceSlug/:projectSlug /:workspaceSlug/:projectSlug/:boardSlug)
-  {
-    path: '/:workspaceSlug',
-    element: <WorkspaceLayout />,
-    children: [
-      { index: true, element: <WorkspaceView /> },
-      {
-        path: ':projectSlug',
-        element: <ProjectLayout />,
+        path: '/tasks',
+        element: <WorkspaceLayout />,
         children: [
-          { index: true, element: <ProjectDetailsView /> },
-          // Standalone deep link — resolves via project + displayId alone, no board needed in path
-          { path: 'todo/:todoDisplayId', element: <TodoDetailPanel /> },
-          { path: 'todo/:todoSlug', element: <TodoDetailPanel /> },
           {
-            path: ':boardSlug',
-            element: <BoardView />,
+            path: '',
+            element: <TaskListRoute />,
+            children: [{ path: 'todo/:todoSlug', element: <TodoDetailPanel /> }],
+          },
+        ],
+      },
+      {
+        path: '/kanban',
+        element: <WorkspaceLayout />,
+        children: [
+          {
+            path: '',
+            element: <KanbanRoute />,
+            children: [{ path: 'todo/:todoSlug', element: <TodoDetailPanel /> }],
+          },
+        ],
+      },
+      {
+        path: '/sprint',
+        element: <WorkspaceLayout />,
+        children: [
+          {
+            path: '',
+            element: <SprintRoute />,
+            children: [{ path: 'todo/:todoSlug', element: <TodoDetailPanel /> }],
+          },
+        ],
+      },
+      {
+        path: '/calendar',
+        element: <WorkspaceLayout />,
+        children: [
+          {
+            path: '',
+            element: <CalendarRoute />,
+            children: [{ path: 'todo/:todoSlug', element: <TodoDetailPanel /> }],
+          },
+        ],
+      },
+      {
+        path: '/:workspaceSlug',
+        element: <WorkspaceLayout />,
+        children: [
+          { index: true, element: <WorkspaceView /> },
+          {
+            path: ':projectSlug',
+            element: <ProjectLayout />,
             children: [
+              { index: true, element: <ProjectDetailsView /> },
+              // Standalone deep link — resolves via project + displayId alone, no board needed in path
               { path: 'todo/:todoDisplayId', element: <TodoDetailPanel /> },
               { path: 'todo/:todoSlug', element: <TodoDetailPanel /> },
+              {
+                path: ':boardSlug',
+                element: <BoardView />,
+                children: [
+                  { path: 'todo/:todoDisplayId', element: <TodoDetailPanel /> },
+                  { path: 'todo/:todoSlug', element: <TodoDetailPanel /> },
+                ],
+              },
             ],
           },
         ],
       },
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
-
-  // Fallback 404 Route
-  { path: '*', element: <NotFoundPage /> },
 ]);
 
 const AppInitializer: React.FC = () => {
