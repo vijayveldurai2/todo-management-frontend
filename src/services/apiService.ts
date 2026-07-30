@@ -43,8 +43,15 @@ export const apiService = {
 
       return await res.json();
     } catch (e: any) {
-      console.warn('Backend server signup failed/unreachable. Simulating signup response:', e);
-      // Fallback simulation for offline/preview
+      // Re-throw genuine API errors (e.g. status code errors, explicit backend responses)
+      if (e.message && !e.message.includes('Failed to fetch') && !e.message.includes('NetworkError')) {
+        throw e;
+      }
+      if (BASE_URL) {
+        throw e; // Hard failure when explicit backend URL is configured
+      }
+
+      console.warn('Backend server signup unreachable. Simulating signup response for preview mode:', e);
       return {
         message: 'Signup successful, please verify your email',
         email: data.email,
@@ -72,8 +79,15 @@ export const apiService = {
       }
       return responseData;
     } catch (e: any) {
-      console.warn('Backend server login failed/unreachable. Falling back to local store login:', e);
-      // Fallback simulation for offline/preview mode
+      // Re-throw genuine API error responses (400, 401, 403, 500)
+      if (e.message && !e.message.includes('Failed to fetch') && !e.message.includes('NetworkError')) {
+        throw e;
+      }
+      if (BASE_URL) {
+        throw e; // Hard failure when explicit backend URL is configured
+      }
+
+      console.warn('Backend server unreachable. Falling back to local store login for preview mode:', e);
       const isEmail = data.login.includes('@');
       const mockUsername = isEmail ? data.login.split('@')[0] : data.login;
       const mockUser: LoginResponse = {
@@ -105,7 +119,14 @@ export const apiService = {
 
       return await res.json();
     } catch (e: any) {
-      console.warn('Backend verify failed/unreachable. Simulating successful verification:', e);
+      if (e.message && !e.message.includes('Failed to fetch') && !e.message.includes('NetworkError')) {
+        throw e;
+      }
+      if (BASE_URL) {
+        throw e;
+      }
+
+      console.warn('Backend verify unreachable. Simulating successful verification for preview mode:', e);
       return {
         message: 'Email verified successfully',
         userId: `u-${Date.now()}`,
