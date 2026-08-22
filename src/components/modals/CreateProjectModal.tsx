@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { setCreateProjectModalOpen } from '../../store/uiSlice';
-import { createNewProject } from '../../store/projectsSlice';
+import { createProject } from '../../store/projectsSlice';
+import { apiService } from '../../services/apiService';
 import { RoleBadge } from '../common/RoleBadge';
 
-interface ProjectMember {
+interface ProjectMemberItem {
   id: string;
   name: string;
   email: string;
@@ -13,56 +14,6 @@ interface ProjectMember {
   avatar?: string;
   initials?: string;
 }
-
-const PRESET_SUGGESTIONS: ProjectMember[] = [
-  {
-    id: 'u-101',
-    name: 'Sarah Chen',
-    email: 'sarah.chen@acme.io',
-    role: 'Designer',
-    avatar:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuC1PKC0Ku2evWEuc8IAMVL7d0JKP-13ijdGYcu4mHQcyrX2ieu3ezZt80XogOO-txGmsTtgIqKsKaYAcltKOZWEhza0iYeKbPPduEgqObKzej1igzR2d8T5ioYr4a0DfgDRXHj1AHtPeYxte-7bENSxstHoMSmAOENofG3s8gPMKMyfMKwpc1OiRTD9zyh4y0yWyWN_q6HEJR8dOPHzeXqtigSxrd5T56VsuCMF_TpKPsCtXG0M-ptB-VnHJb4615eRdMSCGHDMY3w9',
-  },
-  {
-    id: 'u-102',
-    name: 'Alex Rivera',
-    email: 'alex.rivera@acme.io',
-    role: 'Dev',
-    avatar:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBh_WmNHSdBdZ9EccTV-RIN76a0IkVKrjHkSim5lbnUnPxaiWCDIeU5DRvQPRLKmdGOM5s5mWbifbXHKelSKzEeeWEViSXBMIUAStquZlLPzsOB80axUkwezz4MJT_E4OuxNV7yPH9G8fzDgInMXMr7pC2S9cnUU9X1or_0Whm0-WBcGZIByOagADsgXSpC4AV6RVJgA8SUI3KXykzMg0Gz7v4TBcF4ygqkFhT_sFK7H5KASFVRkv6WvAGIzgLIAz_g9-93oqZF8cNR',
-  },
-  {
-    id: 'u-103',
-    name: 'Jordan Smith',
-    email: 'jordan.smith@acme.io',
-    role: 'QA',
-    initials: 'JS',
-  },
-  {
-    id: 'u-104',
-    name: 'Mei Lin',
-    email: 'mei.lin@acme.io',
-    role: 'PM',
-    avatar:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDERkv107r5I33Ey_ZkKRjOuIuOjDd9jFbxDkF53va48wlyiZjw5_BdBtrPRICHwSmzA89sD6o5wU5gGdhZgkWmtCAwZpWXRupdPdJAj0sC-cMXEbK_0R5B3C1qKGwnREKu93Ppu6pZyn5RRp-mUSfPTsf_4PGhpYs406TGbSLJedSmbKMDIB7gX-ht-rBOC7bGR5bIYFc8un0nFJyKuzA7XahWWx3iILXfFv3fafs9zWWDpy5NCNttq4IesSLAfQezLSMgierWU4D2',
-  },
-  {
-    id: 'u-105',
-    name: 'David Miller',
-    email: 'david.miller@acme.io',
-    role: 'Dev',
-    avatar:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCBCweLBBlfVzgW-mjaitVw2l_r_KsV_TkyqPTm47TMyp6ZHjtiKTh_4NxOXjZyXroIE3p4Med5uIxjknN8uAxyv0DzwrXuzoj4DyWEh6HZLlpL8iztaMCTNREcTCJkDNU6clBcvpdyz15OG4G6tzO9F50DX4HYuZdx07g30A9kj_oJHjA0cp2moZQiw3W2Tkk6yAvDF_gi3eiXfbpis7avKDB8bvmAZtBEEVg0AC3Su2aSkKAIdgER7Qvh2FFxPWeSkcJDlhvsLtB_',
-  },
-  {
-    id: 'u-106',
-    name: 'Emma Watson',
-    email: 'emma.watson@acme.io',
-    role: 'QA',
-    avatar:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDe8UyIFm3gWbQSXDBaDGCXU9CgK2mNR4G6lpNSeLw4diCyHZpjMh5D7C4xEeC_nQiao9n-bpzD2lECjNahvxn5GTZgR2GpR2dDJZBsaNQTJYkGP8AakjYwOUgnM0NyCG3lhUwxwlBU1xHv_yKJuS7jMNzDhS8ig3mrHXyvLetP_TvjXdkGiCClhrZOvrvLt24x428xUSXGg5XA1r9QKKa31cVkdQD-gyypvJiciSiClA1KJvPlaTFoYJFRzjYsZmqdwcpeQ7vm5r45',
-  },
-];
 
 export const CreateProjectModal: React.FC = () => {
   const navigate = useNavigate();
@@ -82,6 +33,7 @@ export const CreateProjectModal: React.FC = () => {
   const [description, setDescription] = useState('');
   const [selectedColor, setSelectedColor] = useState('#3525cd');
   const [selectedIcon, setSelectedIcon] = useState('palette');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { projects: existingProjects } = useAppSelector((state) => state.projects);
 
@@ -112,7 +64,7 @@ export const CreateProjectModal: React.FC = () => {
       return false;
     }
     const isTaken = existingProjects.some(
-      (p) => p.prefix?.toUpperCase() === clean
+      (p) => (p.prefix?.toUpperCase() === clean || p.prefixCode?.toUpperCase() === clean)
     );
     if (isTaken) {
       setPrefixError(`${clean} is already used by another project`);
@@ -133,32 +85,44 @@ export const CreateProjectModal: React.FC = () => {
   };
 
   // Members State
-  const [members, setMembers] = useState<ProjectMember[]>([
-    {
-      id: user?.id || 'u-1',
-      name: user?.name || 'Vijay Kumar',
-      email: user?.email || 'vijaykumar.veldurai2@gmail.com',
-      role: 'PM',
-      avatar: user?.avatar || '',
-      initials: 'VK',
-    },
-    {
-      id: 'u-101',
-      name: 'Sarah Chen',
-      email: 'sarah.chen@acme.io',
-      role: 'Designer',
-      avatar:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuC1PKC0Ku2evWEuc8IAMVL7d0JKP-13ijdGYcu4mHQcyrX2ieu3ezZt80XogOO-txGmsTtgIqKsKaYAcltKOZWEhza0iYeKbPPduEgqObKzej1igzR2d8T5ioYr4a0DfgDRXHj1AHtPeYxte-7bENSxstHoMSmAOENofG3s8gPMKMyfMKwpc1OiRTD9zyh4y0yWyWN_q6HEJR8dOPHzeXqtigSxrd5T56VsuCMF_TpKPsCtXG0M-ptB-VnHJb4615eRdMSCGHDMY3w9',
-    },
-    {
-      id: 'u-102',
-      name: 'Alex Rivera',
-      email: 'alex.rivera@acme.io',
-      role: 'Dev',
-      avatar:
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuBh_WmNHSdBdZ9EccTV-RIN76a0IkVKrjHkSim5lbnUnPxaiWCDIeU5DRvQPRLKmdGOM5s5mWbifbXHKelSKzEeeWEViSXBMIUAStquZlLPzsOB80axUkwezz4MJT_E4OuxNV7yPH9G8fzDgInMXMr7pC2S9cnUU9X1or_0Whm0-WBcGZIByOagADsgXSpC4AV6RVJgA8SUI3KXykzMg0Gz7v4TBcF4ygqkFhT_sFK7H5KASFVRkv6WvAGIzgLIAz_g9-93oqZF8cNR',
-    },
-  ]);
+  const [members, setMembers] = useState<ProjectMemberItem[]>([]);
+  const [workspaceMembers, setWorkspaceMembers] = useState<ProjectMemberItem[]>([]);
+
+  // Initialize creator in members list
+  useEffect(() => {
+    if (user) {
+      setMembers([
+        {
+          id: user.id,
+          name: user.name || user.username || 'Current User',
+          email: user.email,
+          role: 'PM',
+          avatar: user.avatar,
+          initials: (user.name || user.email || 'VK').slice(0, 2).toUpperCase(),
+        },
+      ]);
+    }
+  }, [user]);
+
+  // Load real workspace members dynamically
+  useEffect(() => {
+    if (workspaceSlug && isCreateProjectModalOpen) {
+      apiService
+        .getWorkspaceBySlug(workspaceSlug)
+        .then((ws) => apiService.getWorkspaceMembers(ws.id))
+        .then((wmList: any[]) => {
+          const mapped: ProjectMemberItem[] = wmList.map((wm) => ({
+            id: wm.userId,
+            name: wm.userName || wm.userEmail,
+            email: wm.userEmail,
+            role: wm.role === 'SUPER_ADMIN' ? 'PM' : 'Dev',
+            initials: (wm.userName || wm.userEmail || 'US').slice(0, 2).toUpperCase(),
+          }));
+          setWorkspaceMembers(mapped);
+        })
+        .catch((err) => console.warn('Failed to load workspace members for modal:', err));
+    }
+  }, [workspaceSlug, isCreateProjectModalOpen]);
 
   // Add Member inputs
   const [searchQuery, setSearchQuery] = useState('');
@@ -171,14 +135,14 @@ export const CreateProjectModal: React.FC = () => {
 
   if (!isCreateProjectModalOpen) return null;
 
-  const filteredSuggestions = PRESET_SUGGESTIONS.filter(
+  const filteredSuggestions = workspaceMembers.filter(
     (s) =>
       !members.some((m) => m.email.toLowerCase() === s.email.toLowerCase() || m.id === s.id) &&
       (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const handleAddMember = (candidate?: ProjectMember) => {
+  const handleAddMember = (candidate?: ProjectMemberItem) => {
     if (candidate) {
       setMembers((prev) => [...prev, { ...candidate, role: selectedRole || candidate.role }]);
       setSearchQuery('');
@@ -188,10 +152,9 @@ export const CreateProjectModal: React.FC = () => {
 
     if (!searchQuery.trim()) return;
 
-    // Custom typed member
     const query = searchQuery.trim();
     const isEmail = query.includes('@');
-    const newMember: ProjectMember = {
+    const newMember: ProjectMemberItem = {
       id: `m-${Date.now()}`,
       name: isEmail ? query.split('@')[0] : query,
       email: isEmail ? query : `${query.toLowerCase().replace(/\s+/g, '.')}@acme.io`,
@@ -223,35 +186,49 @@ export const CreateProjectModal: React.FC = () => {
       return;
     }
 
-    const action = await dispatch(
-      createNewProject({
-        name: name.trim(),
-        prefix: prefix.toUpperCase().trim(),
-        category,
-        description: description.trim() || 'Custom project workspace with assigned team roles.',
-        color: selectedColor,
-        icon: selectedIcon,
-        contributors: members.map((m) => ({
-          id: m.id,
-          name: m.name,
-          email: m.email,
-          role: m.role,
-          avatar: m.avatar,
-          initials: m.initials,
-        })),
-      })
-    );
+    setIsSubmitting(true);
+    try {
+      const action = await dispatch(
+        createProject({
+          workspaceSlug,
+          userId: user?.id || 'u-1',
+          data: {
+            name: name.trim(),
+            description: description.trim() || 'Project workspace for team initiatives.',
+            prefixCode: prefix.toUpperCase().trim(),
+          },
+        })
+      );
 
-    if (createNewProject.fulfilled.match(action)) {
-      const projectSlug = action.payload.slug || action.payload.id;
-      dispatch(setCreateProjectModalOpen(false));
-      setName('');
-      setPrefix('');
-      setPrefixError('');
-      setIsPrefixEdited(false);
-      setDescription('');
-      setActiveTab('general');
-      navigate(`/${workspaceSlug}/${projectSlug}`);
+      if (createProject.fulfilled.match(action)) {
+        const createdProj = action.payload;
+        const projectSlug = createdProj.slug || createdProj.id;
+
+        // Add additional members picked in modal to the project via API
+        const additionalMembers = members.filter((m) => m.id !== user?.id);
+        if (additionalMembers.length > 0) {
+          await Promise.all(
+            additionalMembers.map((m) =>
+              apiService
+                .addProjectMember(projectSlug, user?.id || 'u-1', { userId: m.id })
+                .catch((err) => console.warn(`Failed to add member ${m.name} to project:`, err))
+            )
+          );
+        }
+
+        dispatch(setCreateProjectModalOpen(false));
+        setName('');
+        setPrefix('');
+        setPrefixError('');
+        setIsPrefixEdited(false);
+        setDescription('');
+        setActiveTab('general');
+        navigate(`/${workspaceSlug}/${projectSlug}`);
+      }
+    } catch (err: any) {
+      console.error('Failed to create project:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -267,95 +244,97 @@ export const CreateProjectModal: React.FC = () => {
 
         <h2 className="text-xl font-bold text-[var(--text-on-surface)] mb-1">Create New Project</h2>
         <p className="text-xs text-[var(--text-on-surface-variant)] mb-4">
-          Set up project workspace parameters, add team members, and define role permissions.
+          Set up project workspace parameters and assign workspace team members.
         </p>
 
-        {/* Top Tab Switcher */}
-        <div className="flex border-b border-[var(--border-outline-variant)] mb-5">
+        {/* Modal Tabs */}
+        <div className="flex gap-2 border-b border-[var(--border-outline-variant)] mb-5">
           <button
             type="button"
             onClick={() => setActiveTab('general')}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+            className={`pb-2.5 px-1 text-xs font-bold uppercase tracking-wider transition-colors relative cursor-pointer ${
               activeTab === 'general'
-                ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
-                : 'border-transparent text-[var(--text-on-surface-variant)] hover:text-[var(--text-on-surface)]'
+                ? 'text-[var(--color-primary)]'
+                : 'text-[var(--text-on-surface-variant)] hover:text-[var(--text-on-surface)]'
             }`}
           >
-            <span className="material-symbols-outlined text-base">folder_special</span>
-            <span>General Info</span>
+            General Details
+            {activeTab === 'general' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />
+            )}
           </button>
-
           <button
             type="button"
             onClick={() => setActiveTab('members')}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+            className={`pb-2.5 px-1 text-xs font-bold uppercase tracking-wider transition-colors relative cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'members'
-                ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
-                : 'border-transparent text-[var(--text-on-surface-variant)] hover:text-[var(--text-on-surface)]'
+                ? 'text-[var(--color-primary)]'
+                : 'text-[var(--text-on-surface-variant)] hover:text-[var(--text-on-surface)]'
             }`}
           >
-            <span className="material-symbols-outlined text-base">group</span>
-            <span>Members & Roles</span>
-            <span className="px-2 py-0.5 rounded-full bg-[var(--color-primary-fixed)] text-[var(--color-primary)] text-[10px] font-extrabold">
+            <span>Team Members</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-[var(--bg-surface-container-highest)] text-[10px]">
               {members.length}
             </span>
+            {activeTab === 'members' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />
+            )}
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* TAB 1: GENERAL INFO */}
-          {activeTab === 'general' && (
+          {activeTab === 'general' ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)] mb-1">
-                    Project Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder="e.g. Website Redesign"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface-container-low)] border border-[var(--border-outline-variant)] text-sm text-[var(--text-on-surface)] outline-none focus:border-[var(--color-primary)] transition-colors"
-                  />
-                </div>
-
-                <div className="col-span-1">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)] mb-1">
-                    Project Code *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    value={prefix}
-                    onChange={(e) => {
-                      setIsPrefixEdited(true);
-                      const upper = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                      setPrefix(upper);
-                      validatePrefix(upper);
-                    }}
-                    onBlur={() => validatePrefix(prefix)}
-                    placeholder="e.g. WR"
-                    className={`w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface-container-low)] border text-sm font-mono font-bold uppercase tracking-wider text-[var(--text-on-surface)] outline-none transition-colors ${
-                      prefixError ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-outline-variant)] focus:border-[var(--color-primary)]'
-                    }`}
-                  />
-                </div>
+              {/* Project Name */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)] mb-1">
+                  Project Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="e.g. Frontend Overhaul"
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface-container-low)] border border-[var(--border-outline-variant)] text-sm font-semibold text-[var(--text-on-surface)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:font-normal placeholder:text-[var(--text-on-surface-variant)]/60"
+                />
               </div>
 
-              {prefixError ? (
-                <p className="text-xs text-red-500 font-medium flex items-center gap-1 -mt-2">
-                  <span className="material-symbols-outlined text-sm">error</span>
-                  {prefixError}
-                </p>
-              ) : (
-                <p className="text-[11px] text-[var(--text-on-surface-variant)] -mt-2">
-                  2–6 uppercase characters (e.g. WR for Website Redesign). Used for all task IDs (WR-1, WR-2). Immutable after creation.
-                </p>
-              )}
+              {/* Project Prefix Code */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)]">
+                    Project Code Prefix <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[10px] text-[var(--text-on-surface-variant)]">2–6 uppercase chars</span>
+                </div>
+                <input
+                  type="text"
+                  value={prefix}
+                  maxLength={6}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    setPrefix(val);
+                    setIsPrefixEdited(true);
+                    validatePrefix(val);
+                  }}
+                  placeholder="e.g. FE"
+                  className={`w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface-container-low)] border text-sm font-mono font-bold text-[var(--text-on-surface)] outline-none transition-colors ${
+                    prefixError
+                      ? 'border-rose-500 focus:border-rose-500'
+                      : 'border-[var(--border-outline-variant)] focus:border-[var(--color-primary)]'
+                  }`}
+                />
+                {prefixError ? (
+                  <p className="text-xs text-rose-500 font-medium mt-1">{prefixError}</p>
+                ) : (
+                  <p className="text-[10px] text-[var(--text-on-surface-variant)] mt-1">
+                    Used as key prefix for tasks generated in this project (e.g. {prefix || 'FE'}-101)
+                  </p>
+                )}
+              </div>
 
+              {/* Category */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)] mb-1">
                   Category
@@ -363,79 +342,60 @@ export const CreateProjectModal: React.FC = () => {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface-container-low)] border border-[var(--border-outline-variant)] text-sm text-[var(--text-on-surface)] outline-none focus:border-[var(--color-primary)] transition-colors cursor-pointer"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface-container-low)] border border-[var(--border-outline-variant)] text-sm font-semibold text-[var(--text-on-surface)] outline-none focus:border-[var(--color-primary)] cursor-pointer"
                 >
-                  <option value="DESIGN">DESIGN</option>
-                  <option value="ENGINEERING">ENGINEERING</option>
-                  <option value="OPERATIONS">OPERATIONS</option>
-                  <option value="MARKETING">MARKETING</option>
+                  <option value="ENGINEERING">Engineering</option>
+                  <option value="DESIGN">Design & Brand</option>
+                  <option value="OPERATIONS">Operations & Support</option>
+                  <option value="MARKETING">Marketing & Growth</option>
+                  <option value="GENERAL">General Initiative</option>
                 </select>
               </div>
 
+              {/* Description */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)] mb-1">
                   Description
                 </label>
                 <textarea
-                  rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Brief overview of project goals, team scope, and target outcomes..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface-container-low)] border border-[var(--border-outline-variant)] text-sm text-[var(--text-on-surface)] outline-none focus:border-[var(--color-primary)] transition-colors custom-scrollbar"
+                  placeholder="What is this project aiming to accomplish?"
+                  rows={3}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface-container-low)] border border-[var(--border-outline-variant)] text-sm text-[var(--text-on-surface)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--text-on-surface-variant)]/60 resize-none"
                 />
               </div>
 
-              {/* Color & Icon Selection */}
+              {/* Color accent */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)] mb-2">
-                  Accent Color & Icon
+                  Theme Color Accent
                 </label>
-
-                <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 custom-scrollbar">
+                <div className="flex items-center gap-3">
                   {colors.map((c) => (
                     <button
-                      type="button"
                       key={c}
+                      type="button"
                       onClick={() => setSelectedColor(c)}
-                      className={`w-7 h-7 rounded-full cursor-pointer transition-transform ${
-                        selectedColor === c ? 'ring-2 ring-offset-2 ring-[var(--color-primary)] scale-110' : 'opacity-80 hover:opacity-100'
+                      className={`w-7 h-7 rounded-full transition-transform cursor-pointer ${
+                        selectedColor === c ? 'scale-125 ring-2 ring-offset-2 ring-[var(--color-primary)]' : 'hover:scale-110'
                       }`}
                       style={{ backgroundColor: c }}
                     />
                   ))}
                 </div>
-
-                <div className="grid grid-cols-8 gap-2">
-                  {icons.map((ic) => (
-                    <button
-                      type="button"
-                      key={ic}
-                      onClick={() => setSelectedIcon(ic)}
-                      className={`p-2 rounded-xl flex items-center justify-center cursor-pointer border transition-all ${
-                        selectedIcon === ic
-                          ? 'bg-[var(--color-primary-fixed)] text-[var(--color-primary)] border-[var(--color-primary)] font-bold'
-                          : 'border-[var(--border-outline-variant)] text-[var(--text-on-surface-variant)] hover:bg-[var(--bg-surface-container-high)]'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-lg">{ic}</span>
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
-          )}
-
-          {/* TAB 2: MEMBERS & ROLES */}
-          {activeTab === 'members' && (
+          ) : (
+            /* Members Tab */
             <div className="space-y-4">
-              {/* Add Member Inputs */}
-              <div className="p-3.5 rounded-xl bg-[var(--bg-surface-container-low)] border border-[var(--border-outline-variant)] space-y-3 relative">
-                <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] block">
-                  Add Member to Project
-                </span>
-
-                <div className="flex flex-col sm:flex-row items-center gap-2">
-                  <div className="relative flex-1 w-full">
+              {/* Add Member Input & Autocomplete */}
+              <div className="relative">
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)] mb-1">
+                  Add Workspace Member
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
                     <input
                       type="text"
                       value={searchQuery}
@@ -444,109 +404,70 @@ export const CreateProjectModal: React.FC = () => {
                         setShowSuggestions(true);
                       }}
                       onFocus={() => setShowSuggestions(true)}
-                      placeholder="Enter name or email address..."
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-surface-container-lowest)] border border-[var(--border-outline-variant)] text-xs text-[var(--text-on-surface)] outline-none focus:border-[var(--color-primary)]"
+                      placeholder="Search workspace members..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface-container-low)] border border-[var(--border-outline-variant)] text-sm text-[var(--text-on-surface)] outline-none focus:border-[var(--color-primary)]"
                     />
-
-                    {/* Autocomplete Suggestions Dropdown */}
-                    {showSuggestions && searchQuery.trim() && filteredSuggestions.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--bg-surface-container-lowest)] border border-[var(--border-outline-variant)] rounded-xl shadow-lg z-20 max-h-40 overflow-y-auto custom-scrollbar p-1">
+                    {showSuggestions && filteredSuggestions.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-surface-container-lowest)] border border-[var(--border-outline-variant)] rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto divide-y divide-[var(--border-outline-variant)]">
                         {filteredSuggestions.map((s) => (
                           <div
                             key={s.id}
                             onClick={() => handleAddMember(s)}
-                            className="p-2 rounded-lg hover:bg-[var(--bg-surface-container-high)] cursor-pointer flex items-center justify-between gap-2 text-xs"
+                            className="p-2.5 hover:bg-[var(--bg-surface-container-high)] flex items-center justify-between cursor-pointer transition-colors"
                           >
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-[var(--color-primary)] text-white text-[9px] font-bold flex items-center justify-center overflow-hidden shrink-0">
-                                {s.avatar ? (
-                                  <img src={s.avatar} alt={s.name} className="w-full h-full object-cover" />
-                                ) : (
-                                  s.initials || s.name.slice(0, 2).toUpperCase()
-                                )}
+                              <div className="w-7 h-7 rounded-full bg-[var(--color-primary)] text-white text-xs font-bold flex items-center justify-center">
+                                {s.initials || s.name.substring(0, 2).toUpperCase()}
                               </div>
                               <div>
-                                <p className="font-semibold text-[var(--text-on-surface)]">{s.name}</p>
+                                <p className="text-xs font-bold text-[var(--text-on-surface)]">{s.name}</p>
                                 <p className="text-[10px] text-[var(--text-on-surface-variant)]">{s.email}</p>
                               </div>
                             </div>
-                            <RoleBadge role={s.role} size="xs" />
+                            <span className="text-[10px] font-bold uppercase text-[var(--color-primary)]">Add</span>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-
-                  {/* Role Selector Dropdown */}
-                  <div className="w-full sm:w-32 shrink-0">
-                    <select
-                      value={selectedRole}
-                      onChange={(e) => setSelectedRole(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-surface-container-lowest)] border border-[var(--border-outline-variant)] text-xs font-semibold text-[var(--text-on-surface)] outline-none focus:border-[var(--color-primary)] cursor-pointer"
-                    >
-                      {rolesList.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Add Button */}
                   <button
                     type="button"
                     onClick={() => handleAddMember()}
-                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[var(--color-primary)] text-white text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shrink-0 flex items-center justify-center gap-1"
+                    disabled={!searchQuery.trim()}
+                    className="px-4 py-2.5 rounded-xl bg-[var(--color-primary)] text-white text-xs font-semibold hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer shrink-0"
                   >
-                    <span className="material-symbols-outlined text-sm">person_add</span>
-                    <span>Add</span>
+                    Add
                   </button>
                 </div>
               </div>
 
               {/* Members List */}
-              <div className="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-on-surface-variant)] block px-1">
-                  Assigned Project Team ({members.length})
-                </span>
-
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                 {members.map((m) => (
                   <div
                     key={m.id}
-                    className="p-2.5 rounded-xl bg-[var(--bg-surface-container-lowest)] border border-[var(--border-outline-variant)] flex items-center justify-between gap-3 text-xs"
+                    className="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-surface-container-low)] border border-[var(--border-outline-variant)]"
                   >
-                    <div className="flex items-center gap-2.5 overflow-hidden">
-                      <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-white text-xs font-bold flex items-center justify-center overflow-hidden shrink-0">
-                        {m.avatar ? (
-                          <img src={m.avatar} alt={m.name} className="w-full h-full object-cover" />
-                        ) : (
-                          m.initials || m.name.slice(0, 2).toUpperCase()
-                        )}
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-white font-bold flex items-center justify-center text-xs shrink-0">
+                        {m.initials || m.name.substring(0, 2).toUpperCase()}
                       </div>
-                      <div className="overflow-hidden">
-                        <p className="font-bold text-[var(--text-on-surface)] truncate">{m.name}</p>
-                        <p className="text-[10px] text-[var(--text-on-surface-variant)] truncate">{m.email}</p>
+                      <div>
+                        <p className="text-xs font-bold text-[var(--text-on-surface)] flex items-center gap-1.5">
+                          {m.name}
+                          {m.id === user?.id && (
+                            <span className="px-1.5 py-0.2 bg-[var(--color-primary-fixed)] text-[var(--color-primary)] text-[9px] rounded font-bold uppercase">
+                              Creator
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-[10px] text-[var(--text-on-surface-variant)]">{m.email}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Interactive Role Switcher Dropdown */}
-                      <select
-                        value={m.role}
-                        onChange={(e) => handleMemberRoleChange(m.id, e.target.value)}
-                        className="px-2 py-1 rounded-lg bg-[var(--bg-surface-container-high)] border border-[var(--border-outline-variant)] text-[10px] font-bold text-[var(--text-on-surface)] outline-none cursor-pointer"
-                      >
-                        {rolesList.map((r) => (
-                          <option key={r} value={r}>
-                            {r}
-                          </option>
-                        ))}
-                      </select>
-
-                      <RoleBadge role={m.role} size="xs" />
-
-                      {/* Remove Member Button */}
-                      {members.length > 1 && (
+                    <div className="flex items-center gap-2">
+                      <RoleBadge role={m.role} />
+                      {m.id !== user?.id && (
                         <button
                           type="button"
                           onClick={() => handleRemoveMember(m.id)}
@@ -566,14 +487,15 @@ export const CreateProjectModal: React.FC = () => {
           {/* Form Actions Footer */}
           <div className="flex justify-between items-center pt-4 border-t border-[var(--border-outline-variant)]">
             <span className="text-[10px] text-[var(--text-on-surface-variant)] font-medium">
-              {activeTab === 'general' ? 'Next step: Team members & roles' : `${members.length} team members configured`}
+              {activeTab === 'general' ? 'Next step: Team members & permissions' : `${members.length} team members added`}
             </span>
 
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => dispatch(setCreateProjectModalOpen(false))}
-                className="px-4 py-2 rounded-xl bg-[var(--bg-surface-container-high)] text-[var(--text-on-surface)] text-xs font-semibold hover:bg-[var(--bg-surface-container-highest)] transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                className="px-4 py-2 rounded-xl bg-[var(--bg-surface-container-high)] text-[var(--text-on-surface)] text-xs font-semibold hover:bg-[var(--bg-surface-container-highest)] transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -590,9 +512,14 @@ export const CreateProjectModal: React.FC = () => {
               ) : (
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[var(--color-primary)] text-white text-xs font-semibold shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+                  disabled={isSubmitting || !name.trim()}
+                  className="px-5 py-2 rounded-xl bg-[var(--color-primary)] text-white text-xs font-semibold shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
-                  <span className="material-symbols-outlined text-sm">check</span>
+                  {isSubmitting ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <span className="material-symbols-outlined text-sm">check</span>
+                  )}
                   <span>Create Project</span>
                 </button>
               )}

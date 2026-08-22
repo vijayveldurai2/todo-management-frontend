@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { NotFoundPage } from '../views/NotFoundPage';
 import { apiService } from '../../services/apiService';
+import { useAppSelector } from '../../store';
 import { Project } from '../../types';
 
 export const ProjectLayout: React.FC = () => {
   const { workspaceSlug, projectSlug } = useParams<{ workspaceSlug: string; projectSlug: string }>();
+  const { user } = useAppSelector((state) => state.auth);
   const [project, setProject] = useState<Project | null>(null);
   const [isNotFound, setIsNotFound] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,7 +20,7 @@ export const ProjectLayout: React.FC = () => {
     setIsNotFound(false);
 
     apiService
-      .getProjectBySlug(workspaceSlug, projectSlug)
+      .getProjectBySlug(workspaceSlug, projectSlug, user?.id)
       .then((proj) => {
         if (isMounted) {
           setProject(proj);
@@ -36,7 +38,7 @@ export const ProjectLayout: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [workspaceSlug, projectSlug]);
+  }, [workspaceSlug, projectSlug, user?.id]);
 
   if (isLoading) {
     return (

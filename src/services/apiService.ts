@@ -1,4 +1,4 @@
-import { Project, Board, Task, User, Workspace, Subtask, Comment, Column, SignupRequest, SignupResponse, LoginRequest, LoginResponse, VerifyResponse } from '../types';
+import { Project, Board, Task, User, Workspace, Subtask, Comment, Column, SignupRequest, SignupResponse, LoginRequest, LoginResponse, VerifyResponse, ProjectRole, ProjectMember } from '../types';
 import { backendStore } from './backendStore';
 
 const BASE_URL = ((import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
@@ -141,16 +141,19 @@ export const apiService = {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return {
-          id: parsed.userId || 'u-101',
-          name: parsed.username || 'Vijay Kumar',
-          email: parsed.email || 'vijaykumar.veldurai2@gmail.com',
-          username: parsed.username,
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
-          role: parsed.role || 'USER',
-          accessToken: parsed.accessToken,
-          provider: 'email',
-        };
+        const uid = parsed.userId || parsed.id;
+        if (uid) {
+          return {
+            id: uid,
+            name: parsed.name || parsed.username || (parsed.email ? parsed.email.split('@')[0] : 'User'),
+            email: parsed.email || '',
+            username: parsed.username || parsed.email,
+            avatar: parsed.avatar || '',
+            role: parsed.role || 'USER',
+            accessToken: parsed.accessToken,
+            provider: parsed.provider || 'email',
+          };
+        }
       } catch (err) {
         console.error('Failed to parse saved auth user:', err);
       }
@@ -162,10 +165,10 @@ export const apiService = {
   async loginOAuth(provider: 'google' | 'github'): Promise<User> {
     return {
       id: `u-${Date.now()}`,
-      name: provider === 'google' ? 'Vijay Kumar (Google)' : 'Vijay Kumar (GitHub)',
-      email: 'vijaykumar.veldurai2@gmail.com',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDTOPP6Xfg9jOtaHJcbQZ0JqaIREWx-kV-vgYnDzdGK2hUfaE4vxqoAs79u0vJAyZYqn3eeQPCe-KxO9PLgoqoRYEtD7W2XOafyVmXh5mTTFqcHJ9FHruxk-Yij8tOx3xN9j1q7q-Fnuk4wNYczkIDad5kWKozaZW0g3_1wMDS7BcrmP2Q1Uy8vzX8XFRerFP_xJuE6E3tOGhmzhA3tSjMcHqVhc6gzvzzhpA-fUf-rnK2py5sk4y05uFBpyADjHnksJ-vzES0S5L0m',
-      role: 'Product Lead',
+      name: provider === 'google' ? 'OAuth User (Google)' : 'OAuth User (GitHub)',
+      email: 'user@example.com',
+      avatar: '',
+      role: 'USER',
       provider,
     };
   },
@@ -176,8 +179,8 @@ export const apiService = {
       id: `u-${Date.now()}`,
       name: displayName,
       email: email,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
-      role: 'Product Lead',
+      avatar: '',
+      role: 'USER',
       provider: 'email',
     };
   },
@@ -321,37 +324,249 @@ export const apiService = {
     }
   },
 
+  async resolveUserId(userId?: string): Promise<string> {
+    if (userId) return userId;
+    const currentUser = await this.getCurrentUser();
+    return currentUser?.id || 'u-1';
+  },
+
   // Projects
-  async getProjects(workspaceSlug: string = 'main-workspace'): Promise<Project[]> {
-    const apiRes = await fetchJson<Project[]>(`/api/workspaces/${workspaceSlug}/projects`);
+  async getProjects(workspaceSlug: string, userId?: string): Promise<Project[]> {
+    const u = await this.resolveUserId(userId);
+    const apiRes = await fetchJson<Project[]>(
+      `/api/workspaces/${encodeURIComponent(workspaceSlug)}/projects?userId=${encodeURIComponent(u)}`
+    );
     return apiRes || backendStore.getProjects();
   },
 
-  async getProjectBySlug(workspaceSlug: string, projectSlug: string): Promise<Project> {
-    const apiRes = await fetchJson<Project>(`/api/workspaces/${workspaceSlug}/projects/${projectSlug}`);
+  async createProject(
+    workspaceSlug: string,
+    userId?: string,
+    data?: { name: string; description?: string; prefixCode?: string }
+  ): Promise<Project> {
+    const u = await this.resolveUserId(userId);
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/workspaces/${encodeURIComponent(workspaceSlug)}/projects?userId=${encodeURIComponent(u)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: data?.name || '',
+            description: data?.description || '',
+            prefixCode: data?.prefixCode,
+          }),
+        }
+      );
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('API createProject failed, using backendStore:', e);
+    }
+    return backendStore.createProject(workspaceSlug, {
+      name: data?.name || '',
+      description: data?.description,
+      prefix: data?.prefixCode,
+    });
+  },
+
+  async getProjectBySlug(workspaceSlug: string, projectSlug: string, userId?: string): Promise<Project> {
+    const u = await this.resolveUserId(userId);
+    const apiRes = await fetchJson<Project>(
+      `/api/workspaces/${encodeURIComponent(workspaceSlug)}/projects/${encodeURIComponent(projectSlug)}?userId=${encodeURIComponent(u)}`
+    );
     if (apiRes) return apiRes;
     const fallback = backendStore.getProjectBySlug(workspaceSlug, projectSlug);
     if (!fallback) throw new Error('not_found');
     return fallback.project;
   },
 
-  async createProject(workspaceSlugOrData: string | Partial<Project>, optionalData?: Partial<Project>): Promise<Project> {
-    const workspaceSlug = typeof workspaceSlugOrData === 'string' ? workspaceSlugOrData : 'main-workspace';
-    const projectData = typeof workspaceSlugOrData === 'string' ? (optionalData || {}) : workspaceSlugOrData;
+  async getProjectDetails(workspaceSlug: string, projectSlug: string, userId?: string): Promise<Project> {
+    return this.getProjectBySlug(workspaceSlug, projectSlug, userId);
+  },
 
+  async updateProject(
+    workspaceSlug: string,
+    projectSlug: string,
+    userId?: string,
+    data?: { name?: string; description?: string; status?: string }
+  ): Promise<Project> {
+    const u = await this.resolveUserId(userId);
     try {
-      const res = await fetch(`/api/workspaces/${workspaceSlug}/projects`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(projectData),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
+      const res = await fetch(
+        `${BASE_URL}/api/workspaces/${encodeURIComponent(workspaceSlug)}/projects/${encodeURIComponent(projectSlug)}?userId=${encodeURIComponent(u)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data || {}),
+        }
+      );
+      if (res.ok) return await res.json();
     } catch (e) {
-      console.warn('API createProject failed, using backendStore:', e);
+      console.warn('API updateProject failed, using backendStore:', e);
     }
-    return backendStore.createProject(workspaceSlug, projectData);
+    return backendStore.updateProject(projectSlug, data || {});
+  },
+
+  async archiveProject(workspaceSlug: string, projectSlug: string, userId?: string): Promise<void> {
+    const u = await this.resolveUserId(userId);
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/workspaces/${encodeURIComponent(workspaceSlug)}/projects/${encodeURIComponent(projectSlug)}?userId=${encodeURIComponent(u)}`,
+        { method: 'DELETE' }
+      );
+      if (res.ok) return;
+    } catch (e) {
+      console.warn('API archiveProject failed, using backendStore:', e);
+    }
+    backendStore.archiveProject(projectSlug);
+  },
+
+  // Project Roles
+  async getProjectRoles(projectSlug: string, userId?: string): Promise<ProjectRole[]> {
+    const u = await this.resolveUserId(userId);
+    const apiRes = await fetchJson<ProjectRole[]>(
+      `/api/projects/${encodeURIComponent(projectSlug)}/roles?userId=${encodeURIComponent(u)}`
+    );
+    return apiRes || backendStore.getProjectRoles(projectSlug);
+  },
+
+  async createProjectRole(
+    projectSlug: string,
+    userId: string,
+    data: { name: string; isAdmin: boolean }
+  ): Promise<ProjectRole> {
+    const u = await this.resolveUserId(userId);
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/projects/${encodeURIComponent(projectSlug)}/roles?userId=${encodeURIComponent(u)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }
+      );
+      if (res.ok) return await res.json();
+      const errJson = await res.json().catch(() => ({}));
+      if (errJson.message || errJson.error) throw new Error(errJson.message || errJson.error);
+    } catch (e: any) {
+      if (e.message && !e.message.includes('Failed to fetch')) throw e;
+    }
+    return backendStore.createProjectRole(projectSlug, data);
+  },
+
+  async updateProjectRole(
+    projectSlug: string,
+    userId: string,
+    roleId: string,
+    data: { name?: string; isAdmin?: boolean }
+  ): Promise<ProjectRole> {
+    const u = await this.resolveUserId(userId);
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/projects/${encodeURIComponent(projectSlug)}/roles/${encodeURIComponent(roleId)}?userId=${encodeURIComponent(u)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }
+      );
+      if (res.ok) return await res.json();
+      const errJson = await res.json().catch(() => ({}));
+      if (errJson.message || errJson.error) throw new Error(errJson.message || errJson.error);
+    } catch (e: any) {
+      if (e.message && !e.message.includes('Failed to fetch')) throw e;
+    }
+    return backendStore.updateProjectRole(projectSlug, roleId, data);
+  },
+
+  async deleteProjectRole(projectSlug: string, userId: string, roleId: string): Promise<void> {
+    const u = await this.resolveUserId(userId);
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/projects/${encodeURIComponent(projectSlug)}/roles/${encodeURIComponent(roleId)}?userId=${encodeURIComponent(u)}`,
+        { method: 'DELETE' }
+      );
+      if (res.ok) return;
+      const errJson = await res.json().catch(() => ({}));
+      if (errJson.message || errJson.error) throw new Error(errJson.message || errJson.error);
+    } catch (e: any) {
+      if (e.message && !e.message.includes('Failed to fetch')) throw e;
+    }
+    backendStore.deleteProjectRole(projectSlug, roleId);
+  },
+
+  // Project Members
+  async getProjectMembers(projectSlug: string, userId?: string): Promise<ProjectMember[]> {
+    const u = await this.resolveUserId(userId);
+    const apiRes = await fetchJson<ProjectMember[]>(
+      `/api/projects/${encodeURIComponent(projectSlug)}/members?userId=${encodeURIComponent(u)}`
+    );
+    return apiRes || backendStore.getProjectMembers(projectSlug);
+  },
+
+  async addProjectMember(
+    projectSlug: string,
+    userId: string,
+    data: { userId: string; roleId?: string }
+  ): Promise<ProjectMember> {
+    const u = await this.resolveUserId(userId);
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/projects/${encodeURIComponent(projectSlug)}/members?userId=${encodeURIComponent(u)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }
+      );
+      if (res.ok) return await res.json();
+      const errJson = await res.json().catch(() => ({}));
+      if (errJson.message || errJson.error) throw new Error(errJson.message || errJson.error);
+    } catch (e: any) {
+      if (e.message && !e.message.includes('Failed to fetch')) throw e;
+    }
+    return backendStore.addProjectMember(projectSlug, data);
+  },
+
+  async updateProjectMemberRole(
+    projectSlug: string,
+    userId: string,
+    targetUserId: string,
+    data: { roleId: string }
+  ): Promise<ProjectMember> {
+    const u = await this.resolveUserId(userId);
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/projects/${encodeURIComponent(projectSlug)}/members/${encodeURIComponent(targetUserId)}?userId=${encodeURIComponent(u)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }
+      );
+      if (res.ok) return await res.json();
+      const errJson = await res.json().catch(() => ({}));
+      if (errJson.message || errJson.error) throw new Error(errJson.message || errJson.error);
+    } catch (e: any) {
+      if (e.message && !e.message.includes('Failed to fetch')) throw e;
+    }
+    return backendStore.updateProjectMemberRole(projectSlug, targetUserId, data);
+  },
+
+  async removeProjectMember(projectSlug: string, userId: string, targetUserId: string): Promise<void> {
+    const u = await this.resolveUserId(userId);
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/projects/${encodeURIComponent(projectSlug)}/members/${encodeURIComponent(targetUserId)}?userId=${encodeURIComponent(u)}`,
+        { method: 'DELETE' }
+      );
+      if (res.ok) return;
+      const errJson = await res.json().catch(() => ({}));
+      if (errJson.message || errJson.error) throw new Error(errJson.message || errJson.error);
+    } catch (e: any) {
+      if (e.message && !e.message.includes('Failed to fetch')) throw e;
+    }
+    backendStore.removeProjectMember(projectSlug, targetUserId);
   },
 
   // Boards

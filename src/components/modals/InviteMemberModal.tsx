@@ -16,7 +16,6 @@ export const InviteMemberModal: React.FC<{ onInvitesSent?: () => void }> = ({ on
   
   const { isInviteMemberModalOpen } = useAppSelector((state) => state.ui);
   const { user } = useAppSelector((state) => state.auth);
-  const { workspaces } = useAppSelector((state) => state.workspaces || { workspaces: [] }); // Fallback if workspaces slice not fully set up
   
   // Find current workspace by slug to get its ID, or try to get it from state/url.
   // We'll fetch workspace dynamically if needed, but for now let's assume we can resolve it.

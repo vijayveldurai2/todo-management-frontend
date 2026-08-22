@@ -4,7 +4,6 @@ import { setSettingsModalOpen } from '../../store/uiSlice';
 import { toggleDarkMode, setColorTheme } from '../../store/themeSlice';
 import { setOAuthModalOpen } from '../../store/authSlice';
 import { apiService } from '../../services/apiService';
-import { fetchProjects } from '../../store/projectsSlice';
 import { fetchTasks } from '../../store/tasksSlice';
 import { ThemeColor } from '../../types';
 
@@ -28,7 +27,6 @@ export const SettingsModal: React.FC = () => {
   const handleResetData = async () => {
     if (confirm('Reset application state and static mock data cache?')) {
       await apiService.resetToDefaults();
-      await dispatch(fetchProjects());
       await dispatch(fetchTasks(undefined));
       dispatch(setSettingsModalOpen(false));
     }

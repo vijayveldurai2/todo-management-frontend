@@ -163,19 +163,43 @@ export interface Board {
   }[];
 }
 
+export type ProjectStatus = 'ACTIVE' | 'ARCHIVED' | 'COMPLETED';
+
+export interface ProjectRole {
+  id: string;
+  projectId: string;
+  name: string;
+  isAdmin: boolean;
+  createdAt?: string;
+}
+
+export interface ProjectMember {
+  id?: string;
+  projectId?: string;
+  userId: string;
+  userName?: string;
+  userEmail?: string;
+  roleId?: string;
+  roleName?: string;
+  joinedAt?: string;
+}
+
 export interface Project {
   id: string;
   workspaceId?: string;
   name: string;
   prefix?: string;
+  prefixCode?: string;
   todo_counter?: number;
   slug?: string;
-  category: string; // e.g. "DESIGN", "ENGINEERING", "OPERATIONS", "MARKETING"
+  status?: ProjectStatus;
+  category?: string; // e.g. "DESIGN", "ENGINEERING", "OPERATIONS", "MARKETING"
   description: string;
-  completedTasks: number;
-  totalTasks: number;
-  progressPercentage: number;
-  contributors: {
+  createdBy?: string;
+  completedTasks?: number;
+  totalTasks?: number;
+  progressPercentage?: number;
+  contributors?: {
     id: string;
     name: string;
     avatar?: string;
@@ -183,10 +207,11 @@ export interface Project {
     role?: string;
     email?: string;
   }[];
-  color: string;
-  icon: string;
+  color?: string;
+  icon?: string;
   template?: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type ThemeColor = 'indigo' | 'emerald' | 'rose' | 'amber' | 'cyan' | 'violet';

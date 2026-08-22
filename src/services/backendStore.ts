@@ -1,4 +1,4 @@
-import { Workspace, Project, Board, Task, Column } from '../types';
+import { Workspace, Project, Board, Task, Column, ProjectRole, ProjectMember } from '../types';
 import { INITIAL_WORKSPACES, INITIAL_PROJECTS, INITIAL_BOARDS, INITIAL_TASKS, TABLE_TASKS } from '../data/mockData';
 import { createUniqueSlug, generateBaseSlug, getRandomShortSuffix } from './slugService';
 
@@ -41,6 +41,31 @@ let columns: Column[] = [
   { id: 'col-in-review', board_id: 'board-1', name: 'In Review', position: 3000, is_locked: false, colorHex: '#f59e0b' },
   { id: 'col-done', board_id: 'board-1', name: 'Done', position: 4000, is_locked: true, colorHex: '#10b981' },
 ];
+
+// PROJECT ROLES & MEMBERS
+let projectRoles: ProjectRole[] = [];
+let projectMembers: ProjectMember[] = [];
+
+const seedProjectRolesAndMembers = () => {
+  projectRoles = [];
+  projectMembers = [];
+  projects.forEach((p) => {
+    const adminRoleId = `role-admin-${p.id}`;
+    const memberRoleId = `role-member-${p.id}`;
+    projectRoles.push(
+      { id: adminRoleId, projectId: p.id, name: 'Admin', isAdmin: true },
+      { id: memberRoleId, projectId: p.id, name: 'Member', isAdmin: false }
+    );
+    projectMembers.push({
+      userId: 'u-1',
+      projectId: p.id,
+      roleId: adminRoleId,
+      userEmail: 'vijaykumar.veldurai2@gmail.com',
+      userName: 'Vijay Kumar',
+    });
+  });
+};
+seedProjectRolesAndMembers();
 
 let tasks: Task[] = [...INITIAL_TASKS, ...TABLE_TASKS].map((t, idx) => {
   let colId = 'col-todo';
@@ -156,6 +181,113 @@ export const backendStore = {
 
     projects.unshift(newProject);
     return newProject;
+  },
+
+  updateProject(projectSlug: string, updates: { name?: string; description?: string; status?: string }): Project {
+    const project = projects.find((p) => p.slug === projectSlug);
+    if (!project) throw new Error('Project not found');
+    if (updates.name !== undefined) project.name = updates.name;
+    if (updates.description !== undefined) project.description = updates.description;
+    if (updates.status !== undefined) project.status = updates.status as any;
+    project.updatedAt = 'Just now';
+    return project;
+  },
+
+  archiveProject(projectSlug: string): Project {
+    const project = projects.find((p) => p.slug === projectSlug);
+    if (!project) throw new Error('Project not found');
+    project.status = 'ARCHIVED';
+    project.updatedAt = 'Just now';
+    return project;
+  },
+
+  getProjectBySlugDirect(projectSlug: string): Project | undefined {
+    return projects.find((p) => p.slug === projectSlug);
+  },
+
+  // PROJECT ROLES
+  getProjectRoles(projectSlug: string): ProjectRole[] {
+    const project = projects.find((p) => p.slug === projectSlug);
+    if (!project) return [];
+    return projectRoles.filter((r) => r.projectId === project.id);
+  },
+
+  createProjectRole(projectSlug: string, data: { name: string; isAdmin: boolean }): ProjectRole {
+    const project = projects.find((p) => p.slug === projectSlug);
+    if (!project) throw new Error('Project not found');
+    const newRole: ProjectRole = {
+      id: `role-${Date.now()}`,
+      projectId: project.id,
+      name: data.name,
+      isAdmin: data.isAdmin,
+    };
+    projectRoles.push(newRole);
+    return newRole;
+  },
+
+  updateProjectRole(projectSlug: string, roleId: string, data: { name?: string; isAdmin?: boolean }): ProjectRole {
+    const role = projectRoles.find((r) => r.id === roleId);
+    if (!role) throw new Error('Role not found');
+    if (data.name !== undefined) role.name = data.name;
+    if (data.isAdmin !== undefined) role.isAdmin = data.isAdmin;
+    return role;
+  },
+
+  deleteProjectRole(projectSlug: string, roleId: string): void {
+    const project = projects.find((p) => p.slug === projectSlug);
+    if (!project) throw new Error('Project not found');
+    const role = projectRoles.find((r) => r.id === roleId);
+    if (!role) throw new Error('Role not found');
+    const adminRoles = projectRoles.filter((r) => r.projectId === project.id && r.isAdmin);
+    if (role.isAdmin && adminRoles.length <= 1) {
+      throw new Error('Cannot delete the last admin role for this project.');
+    }
+    const roleInUse = projectMembers.some((m) => m.roleId === roleId);
+    if (roleInUse) {
+      throw new Error('This role is currently assigned to one or more members. Reassign them first.');
+    }
+    const idx = projectRoles.findIndex((r) => r.id === roleId);
+    if (idx !== -1) projectRoles.splice(idx, 1);
+  },
+
+  // PROJECT MEMBERS
+  getProjectMembers(projectSlug: string): ProjectMember[] {
+    const project = projects.find((p) => p.slug === projectSlug);
+    if (!project) return [];
+    return projectMembers.filter((m) => m.projectId === project.id);
+  },
+
+  addProjectMember(projectSlug: string, data: { userId: string; roleId?: string; userEmail?: string; userName?: string }): ProjectMember {
+    const project = projects.find((p) => p.slug === projectSlug);
+    if (!project) throw new Error('Project not found');
+    const existing = projectMembers.find((m) => m.projectId === project.id && m.userId === data.userId);
+    if (existing) throw new Error('User is already a member of this project.');
+    const defaultRole = projectRoles.find((r) => r.projectId === project.id && !r.isAdmin);
+    const newMember: ProjectMember = {
+      userId: data.userId,
+      projectId: project.id,
+      roleId: data.roleId || defaultRole?.id,
+      userEmail: data.userEmail || `${data.userId}@example.com`,
+      userName: data.userName || data.userId,
+    };
+    projectMembers.push(newMember);
+    return newMember;
+  },
+
+  updateProjectMemberRole(projectSlug: string, targetUserId: string, data: { roleId: string }): ProjectMember {
+    const project = projects.find((p) => p.slug === projectSlug);
+    if (!project) throw new Error('Project not found');
+    const member = projectMembers.find((m) => m.projectId === project.id && m.userId === targetUserId);
+    if (!member) throw new Error('Member not found');
+    member.roleId = data.roleId;
+    return member;
+  },
+
+  removeProjectMember(projectSlug: string, targetUserId: string): void {
+    const project = projects.find((p) => p.slug === projectSlug);
+    if (!project) throw new Error('Project not found');
+    const idx = projectMembers.findIndex((m) => m.projectId === project.id && m.userId === targetUserId);
+    if (idx !== -1) projectMembers.splice(idx, 1);
   },
 
   isPrefixAvailable(workspaceSlug: string, prefix: string): boolean {
