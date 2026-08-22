@@ -78,6 +78,29 @@ export interface Workspace {
   avatar?: string;
 }
 
+export interface WorkspaceMember {
+  id?: string;
+  userId: string;
+  workspaceId: string;
+  role: 'USER' | 'SUPER_ADMIN';
+  userEmail: string;
+  userName: string;
+  status: 'ACTIVE' | 'PENDING' | 'INACTIVE';
+}
+
+export interface WorkspaceInvite {
+  id: string;
+  workspaceId: string;
+  workspaceName: string;
+  workspaceDescription?: string;
+  email: string;
+  invitedBy: string;
+  role: 'USER' | 'SUPER_ADMIN';
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+  expiresAt: string;
+  createdAt: string;
+}
+
 export interface Column {
   id: string;
   board_id?: string;

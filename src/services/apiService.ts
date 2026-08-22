@@ -233,6 +233,94 @@ export const apiService = {
     return fallback;
   },
 
+  async getWorkspaceMembers(workspaceId: string): Promise<any[]> {
+    const apiRes = await fetchJson<any[]>(`/api/workspaces/${workspaceId}/members`);
+    return apiRes || [];
+  },
+
+  async updateWorkspaceMemberRole(workspaceId: string, userId: string, role: string): Promise<any> {
+    const res = await fetch(`${BASE_URL}/api/workspaces/${workspaceId}/members/${encodeURIComponent(userId)}/role`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.message || errJson.error || `Failed to update role`);
+    }
+    return await res.json();
+  },
+
+  async removeWorkspaceMember(workspaceId: string, userId: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/api/workspaces/${workspaceId}/members/${encodeURIComponent(userId)}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.message || errJson.error || `Failed to remove member`);
+    }
+  },
+
+  async inviteWorkspaceMember(workspaceId: string, inviterId: string, email: string, role: string): Promise<any> {
+    const res = await fetch(`${BASE_URL}/api/workspaces/${workspaceId}/invites?inviterId=${encodeURIComponent(inviterId)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role }),
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.message || errJson.error || `Failed to send invite`);
+    }
+
+    return await res.json();
+  },
+
+  async getMyPendingInvites(userId: string): Promise<any[]> {
+    const apiRes = await fetchJson<any[]>(`/api/workspaces/invites/mine?userId=${encodeURIComponent(userId)}`);
+    return apiRes || [];
+  },
+
+  async getWorkspaceInvites(workspaceId: string): Promise<any[]> {
+    const apiRes = await fetchJson<any[]>(`/api/workspaces/${workspaceId}/invites`);
+    return apiRes || [];
+  },
+
+  async acceptInvite(inviteId: string, acceptingUserId: string): Promise<any> {
+    const res = await fetch(`${BASE_URL}/api/workspaces/invites/${inviteId}/accept?acceptingUserId=${encodeURIComponent(acceptingUserId)}`, {
+      method: 'POST',
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.message || errJson.error || `Failed to accept invite`);
+    }
+
+    return await res.json();
+  },
+
+  async declineInvite(inviteId: string, decliningUserId: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/api/workspaces/invites/${inviteId}/decline?decliningUserId=${encodeURIComponent(decliningUserId)}`, {
+      method: 'POST',
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.message || errJson.error || `Failed to decline invite`);
+    }
+  },
+
+  async revokeInvite(inviteId: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/api/workspaces/invites/${inviteId}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.message || errJson.error || `Failed to revoke invite`);
+    }
+  },
+
   // Projects
   async getProjects(workspaceSlug: string = 'main-workspace'): Promise<Project[]> {
     const apiRes = await fetchJson<Project[]>(`/api/workspaces/${workspaceSlug}/projects`);
