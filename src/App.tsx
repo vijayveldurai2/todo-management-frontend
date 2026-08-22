@@ -20,6 +20,7 @@ import { TaskListView } from './components/views/TaskListView';
 import { KanbanBoardView } from './components/views/KanbanBoardView';
 import { SprintBoardView } from './components/views/SprintBoardView';
 import { CalendarView } from './components/views/CalendarView';
+import { NotificationsView } from './components/views/NotificationsView';
 
 const TaskListRoute = () => (
   <div className="relative">
@@ -137,6 +138,11 @@ const router = createBrowserRouter([
             ],
           },
         ],
+      },
+      {
+        path: '/notifications',
+        element: <WorkspaceLayout />,
+        children: [{ index: true, element: <NotificationsView /> }],
       },
       { path: '*', element: <NotFoundPage /> },
     ],
