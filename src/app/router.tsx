@@ -7,7 +7,7 @@ import { ProjectLayout } from '../components/layouts/ProjectLayout';
 import { ProjectDetailsView } from '../components/views/ProjectDetailsView';
 import { TodoDetailPanel } from '../components/modals/TodoDetailPanel';
 import { NotFoundPage } from '../components/views/NotFoundPage';
-import { LoginView } from '../components/views/LoginView';
+import { AuthPage } from '../features/auth/page';
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
 
 export const router = createBrowserRouter([
@@ -15,8 +15,8 @@ export const router = createBrowserRouter([
     element: <App />,
     children: [
       // Public Authentication Handles
-      { path: '/_/login', element: <LoginView initialMode="login" /> },
-      { path: '/_/signup', element: <LoginView initialMode="signup" /> },
+      { path: '/_/login', element: <AuthPage /> },
+      { path: '/_/signup', element: <AuthPage /> },
 
       // Protected Application Handles
       {
