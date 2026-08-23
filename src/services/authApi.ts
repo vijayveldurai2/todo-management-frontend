@@ -1,12 +1,12 @@
-import { api } from '../../services/api';
-import { setCredentials } from './authSlice';
-import { 
-    SignupRequest, 
-    SignupResponse, 
-    LoginRequest, 
-    LoginResponse, 
-    VerifyResponse 
-} from '../../types';
+import { api } from './api';
+import { setCredentials } from '../features/auth/authSlice';
+import {
+    SignupRequest,
+    SignupResponse,
+    LoginRequest,
+    LoginResponse,
+    VerifyResponse
+} from '../types';
 
 export const authApi = api.injectEndpoints({
     endpoints: (builder) => ({
@@ -52,8 +52,8 @@ export const authApi = api.injectEndpoints({
     overrideExisting: false,
 });
 
-export const { 
-    useLoginMutation, 
-    useSignupMutation, 
-    useVerifyEmailMutation 
+export const {
+    useLoginMutation,
+    useSignupMutation,
+    useVerifyEmailMutation
 } = authApi;
