@@ -1,53 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Outlet, useParams, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Outlet, useParams } from 'react-router-dom';
 import { Header } from '../common/Header';
 import { Sidebar } from '../common/Sidebar';
 import { OfflineBanner } from '../common/OfflineBanner';
 import { NotFoundPage } from '../views/NotFoundPage';
 import { CreateProjectModal } from '../modals/CreateProjectModal';
-import { CreateBoardModal } from '../modals/CreateBoardModal';
-import { CreateTaskModal } from '../modals/CreateTaskModal';
 import { SettingsModal } from '../modals/SettingsModal';
-import { OAuthModal } from '../modals/OAuthModal';
 import { KeyboardShortcutsModal } from '../modals/KeyboardShortcutsModal';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
-import { apiService } from '../../services/apiService';
-import { Workspace } from '../../types';
+import { useGetWorkspaceBySlugQuery } from '../../services/workspaceApi';
 
 export const WorkspaceLayout: React.FC = () => {
   useKeyboardShortcuts();
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const [workspace, setWorkspace] = useState<Workspace | null>(null);
-  const [isNotFound, setIsNotFound] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-    if (!workspaceSlug) return;
-
-    setIsLoading(true);
-    setIsNotFound(false);
-
-    apiService
-      .getWorkspaceBySlug(workspaceSlug)
-      .then((ws) => {
-        if (isMounted) {
-          setWorkspace(ws);
-          setIsLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (isMounted) {
-          console.warn('Workspace not found:', err);
-          setIsNotFound(true);
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [workspaceSlug]);
+  const { workspaceSlug = '' } = useParams<{ workspaceSlug: string }>();
+  
+  const { data: workspace, isLoading, isError } = useGetWorkspaceBySlugQuery(workspaceSlug, { 
+    skip: !workspaceSlug 
+  });
 
   if (isLoading) {
     return (
@@ -60,7 +29,7 @@ export const WorkspaceLayout: React.FC = () => {
     );
   }
 
-  if (isNotFound) {
+  if (isError || !workspace) {
     return <NotFoundPage type="workspace" />;
   }
 
@@ -89,12 +58,7 @@ export const WorkspaceLayout: React.FC = () => {
         </div>
       </main>
 
-      {/* Global Modals */}
-      <CreateProjectModal />
-      <CreateBoardModal />
-      <CreateTaskModal />
       <SettingsModal />
-      <OAuthModal />
       <KeyboardShortcutsModal />
     </div>
   );

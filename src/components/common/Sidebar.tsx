@@ -1,19 +1,25 @@
 import React from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { setCreateProjectModalOpen, setSettingsModalOpen } from '../../store/uiSlice';
+import { useAppDispatch, useAppSelector } from '../../app/store';
+import { setCreateProjectModalOpen, setSettingsModalOpen } from '../../features/ui/uiSlice';
+import { useGetWorkspaceProjectsQuery } from '../../services/projectApi';
 
 export const Sidebar: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const dispatch = useAppDispatch();
-  const { workspaceSlug = 'main-workspace', projectSlug, boardSlug } = useParams<{
+  const location = useLocation();
+  const { workspaceSlug, projectSlug, boardSlug } = useParams<{
     workspaceSlug?: string;
     projectSlug?: string;
     boardSlug?: string;
   }>();
 
-  const { projects } = useAppSelector((state) => state.projects);
+  const { user } = useAppSelector((state) => state.auth);
+  
+  const { data: projects = [] } = useGetWorkspaceProjectsQuery(
+    { workspaceSlug: workspaceSlug || '', userId: user?.id || '' },
+    { skip: !workspaceSlug || !user?.id }
+  );
 
   const pathname = location.pathname;
 
@@ -174,7 +180,7 @@ export const Sidebar: React.FC = () => {
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-[var(--text-on-surface-variant)] hover:bg-[var(--bg-surface-container-high)] hover:text-[var(--text-on-surface)] transition-colors cursor-pointer"
         >
           <span className="material-symbols-outlined text-base">settings</span>
-          <span>Settings</span>
+          <span>Workspace Settings</span>
         </button>
       </div>
     </aside>

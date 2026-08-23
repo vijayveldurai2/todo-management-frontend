@@ -1,6 +1,6 @@
 import React from 'react';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { setShortcutsModalOpen } from '../../store/uiSlice';
+import { useAppDispatch, useAppSelector } from '../../app/store';
+import { setShortcutsModalOpen } from '../../features/ui/uiSlice';
 import { SHORTCUT_LIST } from '../../hooks/useKeyboardShortcuts';
 
 export const KeyboardShortcutsModal: React.FC = () => {

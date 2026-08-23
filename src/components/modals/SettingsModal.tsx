@@ -1,11 +1,8 @@
 import React from 'react';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { setSettingsModalOpen } from '../../store/uiSlice';
-import { toggleDarkMode, setColorTheme } from '../../store/themeSlice';
-import { setOAuthModalOpen } from '../../store/authSlice';
+import { useAppDispatch, useAppSelector } from '../../app/store';
+import { setSettingsModalOpen } from '../../features/ui/uiSlice';
+import { toggleDarkMode, setColorTheme } from '../../features/theme/themeSlice';
 import { apiService } from '../../services/apiService';
-import { fetchProjects } from '../../store/projectsSlice';
-import { fetchTasks } from '../../store/tasksSlice';
 import { ThemeColor } from '../../types';
 
 export const SettingsModal: React.FC = () => {
@@ -28,8 +25,6 @@ export const SettingsModal: React.FC = () => {
   const handleResetData = async () => {
     if (confirm('Reset application state and static mock data cache?')) {
       await apiService.resetToDefaults();
-      await dispatch(fetchProjects());
-      await dispatch(fetchTasks(undefined));
       dispatch(setSettingsModalOpen(false));
     }
   };
@@ -108,15 +103,6 @@ export const SettingsModal: React.FC = () => {
                   {isAuthenticated ? `OAuth token active (${user?.provider})` : 'Guest session active'}
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  dispatch(setSettingsModalOpen(false));
-                  dispatch(setOAuthModalOpen(true));
-                }}
-                className="px-3 py-1.5 rounded-lg bg-[var(--color-primary)] text-white font-semibold cursor-pointer"
-              >
-                Manage
-              </button>
             </div>
           </div>
 

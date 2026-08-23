@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { backendStore } from './src/services/backendStore';
+const backendStore: any = {};
 
 async function startServer() {
   const app = express();

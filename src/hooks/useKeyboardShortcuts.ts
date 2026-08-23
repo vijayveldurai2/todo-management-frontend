@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../store';
+import { useAppDispatch, useAppSelector } from '../app/store';
 import {
   setCreateTaskModalOpen,
   setCreateProjectModalOpen,
@@ -8,7 +8,8 @@ import {
   setShortcutsModalOpen,
   setSettingsModalOpen,
   setActiveView,
-} from '../store/uiSlice';
+} from '../features/ui/uiSlice';
+import { toggleDarkMode } from '../features/theme/themeSlice';
 
 export interface ShortcutItem {
   key: string;

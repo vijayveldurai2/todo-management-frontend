@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { setActiveView, setSearchQuery, setSettingsModalOpen, setShortcutsModalOpen } from '../../store/uiSlice';
-import { toggleDarkMode, setColorTheme } from '../../store/themeSlice';
-import { setOAuthModalOpen, logoutUser } from '../../store/authSlice';
+import { useAppDispatch, useAppSelector } from '../../app/store';
+import { setActiveView, setSearchQuery, setSettingsModalOpen, setShortcutsModalOpen } from '../../features/ui/uiSlice';
+import { toggleDarkMode, setColorTheme } from '../../features/theme/themeSlice';
+import { logout } from '../../features/auth/authSlice';
 import { ThemeColor, ActiveView } from '../../types';
 
 export const Header: React.FC = () => {
@@ -252,18 +252,7 @@ export const Header: React.FC = () => {
 
                 <button
                   onClick={() => {
-                    dispatch(setOAuthModalOpen(true));
-                    setIsUserMenuOpen(false);
-                  }}
-                  className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-[var(--bg-surface-container)] cursor-pointer flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-sm">switch_account</span>
-                  <span>Manage OAuth Session</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    dispatch(logoutUser());
+                    dispatch(logout());
                     dispatch(setActiveView('login'));
                     navigate('/login');
                     setIsUserMenuOpen(false);

@@ -1,11 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { setCreateBoardModalOpen } from '../../store/uiSlice';
-import { fetchBoards } from '../../store/projectsSlice';
-import { RoleBadge } from '../common/RoleBadge';
+import { useAppDispatch } from '../../app/store';
+import { setCreateBoardModalOpen } from '../../features/ui/uiSlice';
 import { BoardType, Project, Board } from '../../types';
-import { apiService } from '../../services/apiService';
 
 interface ProjectOutletContext {
   project?: Project;
@@ -20,31 +17,12 @@ export const ProjectDetailsView: React.FC = () => {
   }>();
 
   const outletContext = useOutletContext<ProjectOutletContext>();
-  const [currentProject, setCurrentProject] = useState<Project | null>(outletContext?.project || null);
+  const currentProject = outletContext?.project || null;
   const [boards, setBoards] = useState<Board[]>([]);
   const [activeTab, setActiveTab] = useState<'boards' | 'overview'>('boards');
 
-  useEffect(() => {
-    let isMounted = true;
-    if (projectSlug && workspaceSlug) {
-      apiService
-        .getProjectBySlug(workspaceSlug, projectSlug)
-        .then((p) => {
-          if (isMounted) setCurrentProject(p);
-        })
-        .catch((e) => console.warn(e));
+  // Boards will be fetched via RTK Query once boardApi is implemented
 
-      apiService
-        .getBoards(workspaceSlug, projectSlug)
-        .then((bList) => {
-          if (isMounted) setBoards(bList);
-        })
-        .catch((e) => console.warn(e));
-    }
-    return () => {
-      isMounted = false;
-    };
-  }, [workspaceSlug, projectSlug]);
 
   const handleOpenBoard = (board: Board) => {
     const bSlug = board.slug || board.id;

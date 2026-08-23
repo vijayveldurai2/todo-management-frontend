@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { setOnlineStatus } from '../../store/themeSlice';
+import { useAppDispatch, useAppSelector } from '../../app/store';
+import { setOnlineStatus } from '../../features/theme/themeSlice';
 
 export const OfflineBanner: React.FC = () => {
   const dispatch = useAppDispatch();

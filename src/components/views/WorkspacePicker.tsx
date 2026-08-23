@@ -1,41 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppSelector } from '../../store';
-import { apiService } from '../../services/apiService';
-import { Workspace } from '../../types';
+import { useAppSelector } from '../../app/store';
+import { useGetWorkspacesQuery, useCreateWorkspaceMutation } from '../../services/workspaceApi';
 
 export const WorkspacePicker: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  
   const [workspaceName, setWorkspaceName] = useState('');
   const [workspaceDescription, setWorkspaceDescription] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  const loadWorkspaces = async () => {
-    if (!user?.id) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const res = await apiService.getWorkspacesForUser(user.id);
-      setWorkspaces(res);
-      setError(null);
-    } catch (err: any) {
-      console.warn('Error fetching workspaces:', err);
-      setError(err.message || 'Unable to load your workspaces.');
-      setWorkspaces([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadWorkspaces();
-  }, [user?.id]);
+  // RTK Query Hooks
+  const { data: workspaces = [], isLoading, error: fetchError } = useGetWorkspacesQuery(user?.id || '', {
+    skip: !user?.id,
+  });
+  const [createWorkspace, { isLoading: isCreating }] = useCreateWorkspaceMutation();
 
   const handleCreateWorkspace = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,26 +23,23 @@ export const WorkspacePicker: React.FC = () => {
 
     const name = workspaceName.trim();
     if (!name) {
-      setError('Workspace name is required.');
+      setLocalError('Workspace name is required.');
       return;
     }
 
-    setIsCreating(true);
-    setError(null);
+    setLocalError(null);
 
     try {
-      const newWorkspace = await apiService.createWorkspace(
-        { name, description: workspaceDescription.trim() },
-        user.id
-      );
-      setWorkspaces((prev) => [...prev, newWorkspace]);
+      const newWorkspace = await createWorkspace({
+        creatorId: user.id,
+        workspace: { name, description: workspaceDescription.trim() },
+      }).unwrap();
+      
       setWorkspaceName('');
       setWorkspaceDescription('');
       navigate(`/${newWorkspace.slug}`, { replace: true });
     } catch (err: any) {
-      setError(err.message || 'Unable to create workspace.');
-    } finally {
-      setIsCreating(false);
+      setLocalError(err.data?.message || err.message || 'Unable to create workspace.');
     }
   };
 
@@ -78,6 +55,7 @@ export const WorkspacePicker: React.FC = () => {
   }
 
   const hasWorkspaces = workspaces.length > 0;
+  const displayError = localError || (fetchError ? 'Failed to load workspaces.' : null);
 
   return (
     <div className="min-h-screen bg-[var(--bg-surface)] flex items-center justify-center p-6 text-[var(--text-on-surface)]">
@@ -123,9 +101,9 @@ export const WorkspacePicker: React.FC = () => {
         )}
 
         <form onSubmit={handleCreateWorkspace} className="p-8 space-y-5">
-          {error && (
+          {displayError && (
             <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
-              {error}
+              {displayError}
             </div>
           )}
 
@@ -166,3 +144,4 @@ export const WorkspacePicker: React.FC = () => {
     </div>
   );
 };
+

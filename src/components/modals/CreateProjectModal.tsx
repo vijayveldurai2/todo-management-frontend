@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { setCreateProjectModalOpen } from '../../store/uiSlice';
-import { createNewProject } from '../../store/projectsSlice';
+import { useAppDispatch, useAppSelector } from '../../app/store';
+import { setCreateProjectModalOpen } from '../../features/ui/uiSlice';
+import { useGetWorkspaceProjectsQuery, useCreateProjectMutation } from '../../services/projectApi';
 import { RoleBadge } from '../common/RoleBadge';
 
 interface ProjectMember {
@@ -83,7 +83,11 @@ export const CreateProjectModal: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState('#3525cd');
   const [selectedIcon, setSelectedIcon] = useState('palette');
 
-  const { projects: existingProjects } = useAppSelector((state) => state.projects);
+  const { data: existingProjects = [] } = useGetWorkspaceProjectsQuery(
+    { workspaceSlug, userId: user?.id || '' },
+    { skip: !user?.id }
+  );
+  const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
 
   const generateSuggestedPrefix = (projectName: string): string => {
     if (!projectName.trim()) return '';
@@ -223,27 +227,29 @@ export const CreateProjectModal: React.FC = () => {
       return;
     }
 
-    const action = await dispatch(
-      createNewProject({
-        name: name.trim(),
-        prefix: prefix.toUpperCase().trim(),
-        category,
-        description: description.trim() || 'Custom project workspace with assigned team roles.',
-        color: selectedColor,
-        icon: selectedIcon,
-        contributors: members.map((m) => ({
-          id: m.id,
-          name: m.name,
-          email: m.email,
-          role: m.role,
-          avatar: m.avatar,
-          initials: m.initials,
-        })),
-      })
-    );
+    try {
+      const result = await createProject({
+        workspaceSlug,
+        userId: user?.id || '',
+        project: {
+          name: name.trim(),
+          prefix: prefix.toUpperCase().trim(),
+          category,
+          description: description.trim() || 'Custom project workspace with assigned team roles.',
+          color: selectedColor,
+          icon: selectedIcon,
+          contributors: members.map((m) => ({
+            id: m.id,
+            name: m.name,
+            email: m.email,
+            role: m.role,
+            avatar: m.avatar,
+            initials: m.initials,
+          })),
+        }
+      }).unwrap();
 
-    if (createNewProject.fulfilled.match(action)) {
-      const projectSlug = action.payload.slug || action.payload.id;
+      const projectSlug = result.slug || result.id;
       dispatch(setCreateProjectModalOpen(false));
       setName('');
       setPrefix('');
@@ -252,6 +258,8 @@ export const CreateProjectModal: React.FC = () => {
       setDescription('');
       setActiveTab('general');
       navigate(`/${workspaceSlug}/${projectSlug}`);
+    } catch (err: any) {
+      console.error('Failed to create project:', err);
     }
   };
 
@@ -590,10 +598,11 @@ export const CreateProjectModal: React.FC = () => {
               ) : (
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[var(--color-primary)] text-white text-xs font-semibold shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+                  disabled={isCreating}
+                  className="px-5 py-2 rounded-xl bg-[var(--color-primary)] text-white text-xs font-semibold shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer flex items-center gap-1 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   <span className="material-symbols-outlined text-sm">check</span>
-                  <span>Create Project</span>
+                  <span>{isCreating ? 'Creating...' : 'Create Project'}</span>
                 </button>
               )}
             </div>

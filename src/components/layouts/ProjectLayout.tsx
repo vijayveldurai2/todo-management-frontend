@@ -1,42 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { NotFoundPage } from '../views/NotFoundPage';
-import { apiService } from '../../services/apiService';
-import { Project } from '../../types';
+import { useGetProjectBySlugQuery } from '../../services/projectApi';
+import { useAppSelector } from '../../app/store';
 
 export const ProjectLayout: React.FC = () => {
-  const { workspaceSlug, projectSlug } = useParams<{ workspaceSlug: string; projectSlug: string }>();
-  const [project, setProject] = useState<Project | null>(null);
-  const [isNotFound, setIsNotFound] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { workspaceSlug = '', projectSlug = '' } = useParams<{ workspaceSlug: string; projectSlug: string }>();
+  const { user } = useAppSelector((state) => state.auth);
 
-  useEffect(() => {
-    let isMounted = true;
-    if (!workspaceSlug || !projectSlug) return;
-
-    setIsLoading(true);
-    setIsNotFound(false);
-
-    apiService
-      .getProjectBySlug(workspaceSlug, projectSlug)
-      .then((proj) => {
-        if (isMounted) {
-          setProject(proj);
-          setIsLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (isMounted) {
-          console.warn('Project not found:', err);
-          setIsNotFound(true);
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [workspaceSlug, projectSlug]);
+  const { data: project, isLoading, isError } = useGetProjectBySlugQuery(
+    { workspaceSlug, projectSlug, userId: user?.id || '' },
+    { skip: !workspaceSlug || !projectSlug || !user?.id }
+  );
 
   if (isLoading) {
     return (
@@ -47,7 +22,7 @@ export const ProjectLayout: React.FC = () => {
     );
   }
 
-  if (isNotFound || !project) {
+  if (isError || !project) {
     return <NotFoundPage type="project" />;
   }
 
