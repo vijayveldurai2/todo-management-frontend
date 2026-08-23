@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ActiveView } from '../types';
+import { ActiveView } from '../../types';
 
 interface UIState {
   activeView: ActiveView;
