@@ -1,10 +1,7 @@
 import React, { useEffect } from 'react';
-import { Provider } from 'react-redux';
 import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
-import { store, useAppDispatch, useAppSelector } from './store';
-import { fetchCurrentUser } from './store/authSlice';
-import { fetchProjects } from './store/projectsSlice';
-import { fetchTasks } from './store/tasksSlice';
+import { useAppDispatch, useAppSelector } from './app/store';
+
 
 import { WorkspacePicker } from './components/views/WorkspacePicker';
 import { WorkspaceLayout } from './components/layouts/WorkspaceLayout';
@@ -164,21 +161,14 @@ const AppInitializer: React.FC = () => {
     root.classList.add(`theme-${colorTheme}`);
   }, [mode, colorTheme]);
 
-  // Initial load
-  useEffect(() => {
-    dispatch(fetchCurrentUser());
-    dispatch(fetchProjects());
-    dispatch(fetchTasks(undefined));
-  }, [dispatch]);
+
 
   return <RouterProvider router={router} />;
 };
 
 export function App() {
   return (
-    <Provider store={store}>
-      <AppInitializer />
-    </Provider>
+    <AppInitializer />
   );
 }
 
