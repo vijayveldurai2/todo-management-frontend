@@ -13,6 +13,9 @@ export const WorkspacePicker: React.FC = () => {
   const [workspaceDescription, setWorkspaceDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const [invites, setInvites] = useState<any[]>([]);
+  const [isProcessingInvite, setIsProcessingInvite] = useState<string | null>(null);
 
   const loadWorkspaces = async () => {
     if (!user?.id) {
@@ -21,13 +24,18 @@ export const WorkspacePicker: React.FC = () => {
     }
 
     try {
-      const res = await apiService.getWorkspacesForUser(user.id);
-      setWorkspaces(res);
+      const [wsRes, invitesRes] = await Promise.all([
+        apiService.getWorkspacesForUser(user.id),
+        apiService.getMyPendingInvites(user.id)
+      ]);
+      setWorkspaces(wsRes);
+      setInvites(invitesRes);
       setError(null);
     } catch (err: any) {
-      console.warn('Error fetching workspaces:', err);
+      console.warn('Error fetching workspaces or invites:', err);
       setError(err.message || 'Unable to load your workspaces.');
       setWorkspaces([]);
+      setInvites([]);
     } finally {
       setIsLoading(false);
     }
@@ -66,6 +74,36 @@ export const WorkspacePicker: React.FC = () => {
     }
   };
 
+  const handleAcceptInvite = async (inviteId: string) => {
+    if (!user?.id) return;
+    setIsProcessingInvite(inviteId);
+    try {
+      await apiService.acceptInvite(inviteId, user.id);
+      await loadWorkspaces(); // Reload to get new workspace and updated invites
+    } catch (err: any) {
+      setError(err.message || 'Failed to accept invite.');
+    } finally {
+      setIsProcessingInvite(null);
+    }
+  };
+
+  const handleDeclineInvite = async (inviteId: string) => {
+    if (!user?.id) return;
+    setIsProcessingInvite(inviteId);
+    try {
+      await apiService.declineInvite(inviteId, user.id);
+      setInvites((prev) => prev.filter((i) => i.id !== inviteId));
+    } catch (err: any) {
+      setError(err.message || 'Failed to decline invite.');
+    } finally {
+      setIsProcessingInvite(null);
+    }
+  };
+
+  const handleLaterInvite = (inviteId: string) => {
+    setInvites((prev) => prev.filter((i) => i.id !== inviteId));
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[var(--bg-surface)] flex flex-col items-center justify-center p-6 text-[var(--text-on-surface)]">
@@ -93,6 +131,56 @@ export const WorkspacePicker: React.FC = () => {
               : 'You are not assigned to any workspace yet. Create one to continue.'}
           </p>
         </div>
+
+        {invites.length > 0 && (
+          <div className="p-8 border-b border-[var(--border-outline-variant)] bg-[var(--color-primary-fixed)]/10">
+            <h2 className="text-sm font-bold text-[var(--color-primary)] mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px]">mark_email_unread</span>
+              Pending Invitations ({invites.length})
+            </h2>
+            <div className="space-y-3">
+              {invites.map((invite) => (
+                <div key={invite.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--bg-surface-container-lowest)] p-4 shadow-sm">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-semibold text-[var(--text-on-surface)]">
+                      You've been invited to join <span className="font-extrabold">{invite.workspaceName}</span>
+                    </h3>
+                    {invite.workspaceDescription && (
+                      <p className="text-xs text-[var(--text-on-surface-variant)] mt-1 truncate">
+                        {invite.workspaceDescription}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-center gap-2 shrink-0">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleLaterInvite(invite.id)}
+                        disabled={isProcessingInvite !== null}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-on-surface-variant)] hover:bg-[var(--bg-surface-container-highest)] hover:text-[var(--text-on-surface)] transition-colors disabled:opacity-50"
+                      >
+                        Later
+                      </button>
+                      <button
+                        onClick={() => handleDeclineInvite(invite.id)}
+                        disabled={isProcessingInvite !== null}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-on-surface-variant)] hover:bg-[var(--bg-surface-container-highest)] hover:text-rose-500 transition-colors disabled:opacity-50"
+                      >
+                        Decline
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleAcceptInvite(invite.id)}
+                      disabled={isProcessingInvite !== null}
+                      className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white bg-[var(--color-primary)] shadow-xs hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      {isProcessingInvite === invite.id ? 'Accepting...' : 'Accept'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {hasWorkspaces && (
           <div className="p-8 border-b border-[var(--border-outline-variant)] bg-[var(--bg-surface-container-low)]">

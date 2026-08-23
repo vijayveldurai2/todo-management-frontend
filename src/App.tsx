@@ -3,7 +3,6 @@ import { Provider } from 'react-redux';
 import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
 import { store, useAppDispatch, useAppSelector } from './store';
 import { fetchCurrentUser } from './store/authSlice';
-import { fetchProjects } from './store/projectsSlice';
 import { fetchTasks } from './store/tasksSlice';
 
 import { WorkspacePicker } from './components/views/WorkspacePicker';
@@ -20,6 +19,7 @@ import { TaskListView } from './components/views/TaskListView';
 import { KanbanBoardView } from './components/views/KanbanBoardView';
 import { SprintBoardView } from './components/views/SprintBoardView';
 import { CalendarView } from './components/views/CalendarView';
+import { NotificationsView } from './components/views/NotificationsView';
 
 const TaskListRoute = () => (
   <div className="relative">
@@ -138,6 +138,11 @@ const router = createBrowserRouter([
           },
         ],
       },
+      {
+        path: '/notifications',
+        element: <WorkspaceLayout />,
+        children: [{ index: true, element: <NotificationsView /> }],
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
@@ -167,7 +172,6 @@ const AppInitializer: React.FC = () => {
   // Initial load
   useEffect(() => {
     dispatch(fetchCurrentUser());
-    dispatch(fetchProjects());
     dispatch(fetchTasks(undefined));
   }, [dispatch]);
 
