@@ -7,6 +7,7 @@ import { NotFoundPage } from '../views/NotFoundPage';
 import { CreateProjectModal } from '../modals/CreateProjectModal';
 import { SettingsModal } from '../modals/SettingsModal';
 import { KeyboardShortcutsModal } from '../modals/KeyboardShortcutsModal';
+import { InviteMemberModal } from '../modals/InviteMemberModal';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useGetWorkspaceBySlugQuery } from '../../services/workspaceApi';
 
@@ -60,6 +61,8 @@ export const WorkspaceLayout: React.FC = () => {
 
       <SettingsModal />
       <KeyboardShortcutsModal />
+      <CreateProjectModal />
+      <InviteMemberModal />
     </div>
   );
 };

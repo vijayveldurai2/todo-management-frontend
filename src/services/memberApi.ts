@@ -38,6 +38,14 @@ export const memberApi = api.injectEndpoints({
             }),
             invalidatesTags: ["Members"],
         }),
+        addWorkspaceMember: build.mutation<WorkspaceMember, { workspaceId: string; inviterId: string; email: string; role: string }>({
+            query: ({ workspaceId, inviterId, email, role }) => ({
+                url: `/api/workspaces/${workspaceId}/invites?inviterId=${inviterId}`,
+                method: "POST",
+                body: { email, role },
+            }),
+            invalidatesTags: ["Members"],
+        }),
 
         // Project Members API
         getProjectMembers: build.query<ProjectMember[], { projectSlug: string; userId: string }>({
@@ -75,6 +83,7 @@ export const {
     useGetWorkspaceMembersQuery,
     useChangeWorkspaceMemberRoleMutation,
     useRemoveWorkspaceMemberMutation,
+    useAddWorkspaceMemberMutation,
     useGetProjectMembersQuery,
     useAddProjectMemberMutation,
     useChangeProjectMemberRoleMutation,

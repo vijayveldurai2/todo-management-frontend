@@ -12,6 +12,7 @@ interface UIState {
   isCreateBoardModalOpen: boolean;
   isSettingsModalOpen: boolean;
   isShortcutsModalOpen: boolean;
+  isInviteMemberModalOpen: boolean;
 }
 
 const initialState: UIState = {
@@ -25,6 +26,7 @@ const initialState: UIState = {
   isCreateBoardModalOpen: false,
   isSettingsModalOpen: false,
   isShortcutsModalOpen: false,
+  isInviteMemberModalOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -61,6 +63,9 @@ const uiSlice = createSlice({
     setShortcutsModalOpen: (state, action: PayloadAction<boolean>) => {
       state.isShortcutsModalOpen = action.payload;
     },
+    setInviteMemberModalOpen: (state, action: PayloadAction<boolean>) => {
+      state.isInviteMemberModalOpen = action.payload;
+    },
   },
 });
 
@@ -75,6 +80,7 @@ export const {
   setCreateBoardModalOpen,
   setSettingsModalOpen,
   setShortcutsModalOpen,
+  setInviteMemberModalOpen,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

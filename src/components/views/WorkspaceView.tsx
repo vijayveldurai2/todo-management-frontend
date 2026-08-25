@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../app/store';
-import { setCreateProjectModalOpen } from '../../features/ui/uiSlice';
+import { setCreateProjectModalOpen, setInviteMemberModalOpen } from '../../features/ui/uiSlice';
 import { WorkspaceProjectsTab } from './workspace/WorkspaceProjectsTab';
 import { WorkspaceMembersTab } from './workspace/WorkspaceMembersTab';
 
@@ -38,7 +38,7 @@ export const WorkspaceView: React.FC = () => {
           </button>
         ) : (
           <button
-            // TODO: dispatch open invite modal
+            onClick={() => dispatch(setInviteMemberModalOpen(true))}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-primary)] text-white font-semibold text-xs shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer shrink-0 self-start sm:self-auto"
           >
             <span className="material-symbols-outlined text-base">person_add</span>
