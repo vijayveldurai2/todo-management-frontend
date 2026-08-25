@@ -2,18 +2,15 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppSelector } from '../../../app/store';
 import { useGetWorkspaceMembersQuery, useChangeWorkspaceMemberRoleMutation, useRemoveWorkspaceMemberMutation } from '../../../services/memberApi';
+import { useGetWorkspaceBySlugQuery } from '../../../services/workspaceApi';
 
 export const WorkspaceMembersTab: React.FC = () => {
   const { workspaceSlug = 'main-workspace' } = useParams<{ workspaceSlug: string }>();
   
-  // Note: we need the workspaceId for these endpoints, but we might only have workspaceSlug in the URL.
-  // We'll assume for now the user has fetched the workspace details in the layout or we can use the slug if the API supports it.
-  // The memberApi currently takes workspaceId for getWorkspaceMembers, so this might need an adjustment to use getWorkspaceBySlug first,
-  // or updating the API to support fetching members by slug. 
-  // For the sake of this prompt, we use workspaceSlug as the ID assuming the backend supports it or it maps 1:1 in this mock.
-  const workspaceId = workspaceSlug; 
+  const { data: workspace, isLoading: isWorkspaceLoading } = useGetWorkspaceBySlugQuery(workspaceSlug);
+  const workspaceId = workspace?.id || '';
 
-  const { data: members = [], isLoading } = useGetWorkspaceMembersQuery(workspaceId);
+  const { data: members = [], isLoading: isMembersLoading } = useGetWorkspaceMembersQuery(workspaceId, { skip: !workspaceId });
   const [changeRole] = useChangeWorkspaceMemberRoleMutation();
   const [removeMember] = useRemoveWorkspaceMemberMutation();
   const { user } = useAppSelector((state) => state.auth);
@@ -38,7 +35,7 @@ export const WorkspaceMembersTab: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (isWorkspaceLoading || isMembersLoading) {
     return (
       <div className="flex justify-center p-8">
         <div className="w-6 h-6 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin"></div>

@@ -14,6 +14,7 @@ export const Sidebar: React.FC = () => {
     boardSlug?: string;
   }>();
 
+  const { activeView } = useAppSelector((state) => state.ui);
   const { user } = useAppSelector((state) => state.auth);
   
   const { data: projects = [] } = useGetWorkspaceProjectsQuery(
@@ -112,7 +113,7 @@ export const Sidebar: React.FC = () => {
           </button>
 
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/_/login')}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold text-[var(--text-on-surface-variant)] hover:bg-[var(--bg-surface-container-high)] hover:text-[var(--text-on-surface)] transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-lg">login</span>

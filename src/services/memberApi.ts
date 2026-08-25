@@ -20,12 +20,12 @@ export const memberApi = api.injectEndpoints({
     endpoints: (build) => ({
         // Workspace Members API
         getWorkspaceMembers: build.query<WorkspaceMember[], string>({
-            query: (workspaceId) => `/workspaces/${workspaceId}/members`,
+            query: (workspaceId) => `/api/workspaces/${workspaceId}/members`,
             providesTags: ["Members"],
         }),
         changeWorkspaceMemberRole: build.mutation<WorkspaceMember, { workspaceId: string; userId: string; role: string }>({
             query: ({ workspaceId, userId, role }) => ({
-                url: `/workspaces/${workspaceId}/members/${userId}/role`,
+                url: `/api/workspaces/${workspaceId}/members/${userId}/role`,
                 method: "PUT",
                 body: { role },
             }),
@@ -33,7 +33,7 @@ export const memberApi = api.injectEndpoints({
         }),
         removeWorkspaceMember: build.mutation<void, { workspaceId: string; userId: string }>({
             query: ({ workspaceId, userId }) => ({
-                url: `/workspaces/${workspaceId}/members/${userId}`,
+                url: `/api/workspaces/${workspaceId}/members/${userId}`,
                 method: "DELETE",
             }),
             invalidatesTags: ["Members"],
@@ -41,12 +41,12 @@ export const memberApi = api.injectEndpoints({
 
         // Project Members API
         getProjectMembers: build.query<ProjectMember[], { projectSlug: string; userId: string }>({
-            query: ({ projectSlug, userId }) => `/projects/${projectSlug}/members?userId=${userId}`,
+            query: ({ projectSlug, userId }) => `/api/projects/${projectSlug}/members?userId=${userId}`,
             providesTags: ["Members"],
         }),
         addProjectMember: build.mutation<ProjectMember, { projectSlug: string; userId: string; targetUserId: string; roleId: string }>({
             query: ({ projectSlug, userId, targetUserId, roleId }) => ({
-                url: `/projects/${projectSlug}/members?userId=${userId}`,
+                url: `/api/projects/${projectSlug}/members?userId=${userId}`,
                 method: "POST",
                 body: { userId: targetUserId, roleId },
             }),
@@ -54,7 +54,7 @@ export const memberApi = api.injectEndpoints({
         }),
         changeProjectMemberRole: build.mutation<ProjectMember, { projectSlug: string; targetUserId: string; userId: string; roleId: string }>({
             query: ({ projectSlug, targetUserId, userId, roleId }) => ({
-                url: `/projects/${projectSlug}/members/${targetUserId}?userId=${userId}`,
+                url: `/api/projects/${projectSlug}/members/${targetUserId}?userId=${userId}`,
                 method: "PATCH",
                 body: { roleId },
             }),
@@ -62,7 +62,7 @@ export const memberApi = api.injectEndpoints({
         }),
         removeProjectMember: build.mutation<void, { projectSlug: string; targetUserId: string; userId: string }>({
             query: ({ projectSlug, targetUserId, userId }) => ({
-                url: `/projects/${projectSlug}/members/${targetUserId}?userId=${userId}`,
+                url: `/api/projects/${projectSlug}/members/${targetUserId}?userId=${userId}`,
                 method: "DELETE",
             }),
             invalidatesTags: ["Members"],

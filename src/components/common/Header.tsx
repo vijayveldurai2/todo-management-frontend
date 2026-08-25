@@ -254,7 +254,7 @@ export const Header: React.FC = () => {
                   onClick={() => {
                     dispatch(logout());
                     dispatch(setActiveView('login'));
-                    navigate('/login');
+                    navigate('/_/login');
                     setIsUserMenuOpen(false);
                   }}
                   className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-red-500/10 text-red-600 dark:text-red-400 font-semibold cursor-pointer flex items-center gap-2"

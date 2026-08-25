@@ -4,16 +4,16 @@ import { Project } from "../types";
 export const projectApi = api.injectEndpoints({
     endpoints: (build) => ({
         getWorkspaceProjects: build.query<Project[], { workspaceSlug: string; userId: string }>({
-            query: ({ workspaceSlug, userId }) => `/workspaces/${workspaceSlug}/projects?userId=${userId}`,
+            query: ({ workspaceSlug, userId }) => `/api/workspaces/${workspaceSlug}/projects?userId=${userId}`,
             providesTags: ["Projects"],
         }),
         getProjectBySlug: build.query<Project, { workspaceSlug: string; projectSlug: string; userId: string }>({
-            query: ({ workspaceSlug, projectSlug, userId }) => `/workspaces/${workspaceSlug}/projects/${projectSlug}?userId=${userId}`,
+            query: ({ workspaceSlug, projectSlug, userId }) => `/api/workspaces/${workspaceSlug}/projects/${projectSlug}?userId=${userId}`,
             providesTags: (result, error, arg) => [{ type: "Projects", id: arg.projectSlug }],
         }),
         createProject: build.mutation<Project, { workspaceSlug: string; userId: string; project: Partial<Project> }>({
             query: ({ workspaceSlug, userId, project }) => ({
-                url: `/workspaces/${workspaceSlug}/projects?userId=${userId}`,
+                url: `/api/workspaces/${workspaceSlug}/projects?userId=${userId}`,
                 method: "POST",
                 body: project,
             }),
@@ -21,7 +21,7 @@ export const projectApi = api.injectEndpoints({
         }),
         updateProject: build.mutation<Project, { workspaceSlug: string; projectSlug: string; userId: string; project: Partial<Project> }>({
             query: ({ workspaceSlug, projectSlug, userId, project }) => ({
-                url: `/workspaces/${workspaceSlug}/projects/${projectSlug}?userId=${userId}`,
+                url: `/api/workspaces/${workspaceSlug}/projects/${projectSlug}?userId=${userId}`,
                 method: "PATCH",
                 body: project,
             }),
@@ -29,7 +29,7 @@ export const projectApi = api.injectEndpoints({
         }),
         deleteProject: build.mutation<void, { workspaceSlug: string; projectSlug: string; userId: string }>({
             query: ({ workspaceSlug, projectSlug, userId }) => ({
-                url: `/workspaces/${workspaceSlug}/projects/${projectSlug}?userId=${userId}`,
+                url: `/api/workspaces/${workspaceSlug}/projects/${projectSlug}?userId=${userId}`,
                 method: "DELETE",
             }),
             invalidatesTags: (result, error, arg) => [{ type: "Projects", id: arg.projectSlug }],
