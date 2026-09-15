@@ -7,7 +7,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/routing.test.cjs",
+    "test": "node tests/routing.test.cjs && node tests/auth.test.cjs && node tests/appearance.test.cjs",
     "lint": "tsc --noEmit",
     "preview": "vite preview --host 127.0.0.1"
   },
