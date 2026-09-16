@@ -36,12 +36,48 @@ const store = configureStore({ reducer: { [authApi.reducerPath]: authApi.reducer
   assert.deepEqual(requests.at(-1).body, registration); assert.equal(requests.at(-1).authorization, null);
   response = { id: 'user-1', name: 'Anya' };
   const me = store.dispatch(authApi.endpoints.me.initiate()); await me.unwrap(); me.unsubscribe();
-  assert.equal(requests.at(-1).authorization, 'Bearer test-token');
-  status = 401; response = { message: 'Expired' };
-  const expired = store.dispatch(authApi.endpoints.me.initiate(undefined, { forceRefetch: true })); await expired; expired.unsubscribe();
-  assert.equal(readToken(), null); assert(actions.includes('session/expired'));
+  assert.equal(storage.size, 0, 'Tokens must not be persisted to sessionStorage');
+
+  // Test silent refresh on 401: first request gets 401, refresh returns new token, retry succeeds
+  saveToken('old-token');
+  let refreshAttempted = false;
+  global.fetch = async request => {
+    requests.push({ url: request.url, authorization: request.headers.get('Authorization') });
+    if (request.url.endsWith('/api/auth/refresh')) {
+      refreshAttempted = true;
+      return new Response(JSON.stringify({ accessToken: 'rotated-access-token', tokenType: 'Bearer' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (request.url.endsWith('/api/auth/me')) {
+      if (request.headers.get('Authorization') === 'Bearer old-token') {
+        return new Response(JSON.stringify({ message: 'Token expired' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (request.headers.get('Authorization') === 'Bearer rotated-access-token') {
+        return new Response(JSON.stringify({ id: 'user-1', name: 'Anya Refreshed' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+    return new Response(JSON.stringify(response), { status, headers: { 'Content-Type': 'application/json' } });
+  };
+
+  const reauthMe = store.dispatch(authApi.endpoints.me.initiate(undefined, { forceRefetch: true }));
+  const reauthResult = await reauthMe.unwrap();
+  reauthMe.unsubscribe();
+  assert(refreshAttempted, 'Silent refresh endpoint should be called on 401');
+  assert.equal(readToken(), 'rotated-access-token', 'Access token in memory should be updated to refreshed token');
+  assert.equal(reauthResult.name, 'Anya Refreshed', 'Original query should be retried and succeed with refreshed token');
+
+  // Test refresh failure: refresh returns 401 -> session/expired
+  global.fetch = async request => {
+    requests.push({ url: request.url, authorization: request.headers.get('Authorization') });
+    return new Response(JSON.stringify({ message: 'Session expired' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+  };
+  const failedMe = store.dispatch(authApi.endpoints.me.initiate(undefined, { forceRefetch: true }));
+  await failedMe;
+  failedMe.unsubscribe();
+  assert.equal(readToken(), null);
+  assert(actions.includes('session/expired'));
+
   assert.match(authError({ status: 'FETCH_ERROR' }), /cannot reach/);
   assert.match(authError({ status: 500, data: { message: 'database-secret' } }), /could not complete/);
   clearToken(); store.dispatch(authApi.util.resetApiState());
-  console.log('Auth transport, signup contract, bearer session, expiry and error handling passed');
+  console.log('Two-token in-memory transport, silent re-auth retry, refresh expiry and error handling passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });
