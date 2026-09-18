@@ -36,3 +36,8 @@ Whenever updating API service hooks, RTK Query endpoints, data models, or authen
    - Standardize query parameters and pagination keys (`page`, `size`, `sort`).
 3. **Multi-Root IDE Workspace**:
    - Open [`todo-management.code-workspace`](file:///c:/Projects/Vijay/random/todo-management.code-workspace) to work on both frontend and backend side-by-side in Antigravity IDE.
+4. **Git Branching & Protected Branches Policy**:
+   - **NEVER merge branches into `dev`, `stage`, `staging`, `main`, or `master`**.
+   - Merges into base branches must strictly happen via Pull Requests (PRs) created by the user with descriptions.
+   - All agent work must be committed and kept on dedicated feature branches (e.g., `feat/...`, `fix/...`).
+
