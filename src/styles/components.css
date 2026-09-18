@@ -30,3 +30,28 @@ dialog.side-panel{width:min(460px,100%);height:100dvh;max-height:100dvh;margin:0
 @keyframes popover-enter{from{opacity:0;transform:translateY(var(--motion-distance))}to{opacity:1;transform:translateY(0)}}
 @media(max-width:500px){.mynaa-modal .dialog-content{padding:22px}dialog.side-panel{border-radius:0}}
 
+
+.m3-shape{display:block;flex-shrink:0;max-width:100%;height:auto;aspect-ratio:1}
+.shape-frame{position:relative;display:inline-grid;place-items:center;max-width:100%;aspect-ratio:1;vertical-align:middle}
+.shape-frame>.m3-shape{position:absolute;inset:0;width:100%;height:100%;color:var(--shape-fill,var(--wash))}
+.shape-frame-content{position:relative;display:grid;place-items:center;width:65%;height:65%;color:var(--ink)}
+.shape-frame-content>svg{width:32px;height:32px}
+.illustration-frame{--shape-fill:#f4f1eb}
+.illustration-frame img{width:100%;height:100%;object-fit:contain}
+.shape-workshop{--shape-fill:light-dark(#dfdfd4,#d0d0c2)}
+.shape-workshop.tone-sage{--shape-fill:light-dark(#bbd0b5,#b5cda9)}
+.shape-workshop.tone-lavender{--shape-fill:light-dark(#d6cbef,#c8b8e6)}
+.shape-workshop.tone-peach{--shape-fill:light-dark(#edc6ae,#ebbd9f)}
+.shape-workshop .shape-frame-content{color:#252523}
+.shape-controls{display:flex;align-items:end;gap:24px;flex-wrap:wrap;margin:24px 0}
+.shape-controls .ui-field{width:180px}.shape-controls a,.shape-download{font-size:13px;text-decoration:underline;text-underline-offset:4px}
+.shape-library{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.shape-choice{display:flex;flex-direction:column;justify-content:center;gap:16px;padding:20px 8px;border:1px solid var(--line);border-radius:16px;min-width:0}
+.shape-choice span{text-transform:capitalize;font-size:12px}
+.shape-choice .m3-shape,.shape-sizes .m3-shape{color:var(--shape-fill)}
+.shape-choice .m3-shape{transition:transform var(--motion-enter) var(--motion-ease)}
+.shape-choice:hover .m3-shape,.shape-choice:focus-visible .m3-shape{transform:rotate(8deg) scale(1.04)}
+.shape-choice[aria-pressed=true]{border-color:var(--ink);background:var(--wash)}
+.shape-sizes{display:flex;align-items:center;gap:16px;min-height:148px;flex-wrap:wrap}
+@media(max-width:650px){.shape-library{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
