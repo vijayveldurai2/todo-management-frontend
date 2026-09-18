@@ -4,8 +4,14 @@ import { signedIn, expired } from '../features/auth/authSlice';
 
 const publicEndpoints = ['login', 'signup', 'verifyEmail', 'refresh'];
 
+function getBaseUrl(): string {
+  const envUrl = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+  if (!envUrl) return '/api';
+  return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
+}
+
 const rawQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseUrl: getBaseUrl(),
   credentials: 'include',
   prepareHeaders(headers, { endpoint }) {
     const token = readToken();
