@@ -1,0 +1,24 @@
+:root{--motion-fast:120ms;--motion-enter:180ms;--motion-distance:3px;--motion-ease:cubic-bezier(.2,0,0,1);--loader-cycle:1600ms}
+:root[data-motion=standard]{--motion-fast:180ms;--motion-enter:260ms;--motion-distance:5px}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}:root[data-theme=system]{color-scheme:light dark}
+button,a,input,textarea,select,summary{transition:background-color var(--motion-fast) var(--motion-ease),color var(--motion-fast) var(--motion-ease),border-color var(--motion-fast) var(--motion-ease),box-shadow var(--motion-fast) var(--motion-ease)}
+.auth-form-panel,.detail,.dialog-content{animation:mynaa-enter var(--motion-enter) var(--motion-ease) both}
+@keyframes mynaa-enter{from{opacity:0;transform:translateY(var(--motion-distance))}to{opacity:1;transform:translateY(0)}}
+@keyframes mynaa-spin{to{transform:rotate(360deg)}}
+@keyframes mynaa-linear{from{transform:translateX(-120%)}to{transform:translateX(340%)}}
+@keyframes mynaa-wave{to{transform:translateX(24px)}}
+@keyframes mynaa-pulse{50%{opacity:.6}}
+.circular-loader{display:inline-block;flex-shrink:0;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:mynaa-spin var(--loader-cycle) linear infinite}
+.page-loader{min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;color:var(--soft)}
+.loading-button{position:relative;display:inline-grid;grid-template-areas:"content";align-items:center;justify-items:center}
+.loading-button .button-content,.loading-button .button-pending{grid-area:content;display:inline-flex;align-items:center;justify-content:center;gap:10px}
+.loading-button .button-pending{min-width:max-content}
+.linear-loader{height:4px;background:var(--line);border-radius:8px;overflow:hidden;width:100%}.linear-loader>span{display:block;height:100%;background:var(--ink);border-radius:8px;transition:width var(--motion-fast) var(--motion-ease)}.linear-loader.indeterminate>span{width:30%;animation:mynaa-linear 2200ms var(--motion-ease) infinite}
+.zigzag-loader{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.zigzag-loader svg{width:180px;max-width:100%;height:24px;flex-shrink:1}.zigzag-loader path{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.zigzag-track{stroke:var(--line)}.zigzag-wave{stroke:var(--ink);stroke-dasharray:50 250;animation:mynaa-wave var(--loader-cycle) linear infinite}.loader-label{font-size:12px;color:var(--soft)}
+.skeleton{display:block;background:var(--line);border-radius:6px;max-width:100%;animation:mynaa-pulse 2200ms ease-in-out infinite}.skeleton-round{border-radius:999px}
+.appearance-trigger{flex-shrink:0}.auth-footer{display:flex;align-items:center;justify-content:center;gap:12px}.app-appearance{display:flex;justify-content:flex-end;padding:0 24px}
+.appearance-settings{display:grid;gap:20px}.appearance-settings fieldset{border:0;margin:0;padding:0;min-width:0}.appearance-settings legend{margin-bottom:10px;font-size:13px}.appearance-options{display:flex;flex-wrap:wrap;gap:8px}.appearance-options label{display:flex;align-items:center;gap:8px;background:var(--wash);border-radius:20px;padding:9px 12px;text-transform:capitalize;cursor:pointer;min-height:44px}.appearance-options input{accent-color:var(--ink);margin:0;width:16px;height:16px;min-height:0}.appearance-settings p{font-size:13px}.loader-preview summary{padding:8px 0;font-size:13px}.loader-preview>div{display:grid;gap:20px;padding:16px 0}
+:root[data-motion=off]{--motion-fast:0ms;--motion-enter:0ms}
+:root[data-motion=off] *,:root[data-motion=off] *::before,:root[data-motion=off] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+:root[data-motion=off] .linear-loader.indeterminate>span{transform:translateX(110%)}
+@media(prefers-reduced-motion:reduce){:root{--motion-fast:0ms;--motion-enter:0ms}*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.linear-loader.indeterminate>span{transform:translateX(110%)}}
