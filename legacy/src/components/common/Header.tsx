@@ -179,6 +179,10 @@ export const Header: React.FC = () => {
 
         {/* Notifications */}
         <button
+          onClick={() => {
+            dispatch(setActiveView('notifications' as ActiveView));
+            navigate('/notifications');
+          }}
           title="Notifications"
           className="p-2 rounded-full hover:bg-[var(--bg-surface-container-high)] text-[var(--text-on-surface-variant)] transition-colors cursor-pointer relative"
         >
