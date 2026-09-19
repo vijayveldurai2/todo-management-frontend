@@ -55,3 +55,19 @@ dialog.side-panel{width:min(460px,100%);height:100dvh;max-height:100dvh;margin:0
 .shape-sizes{display:flex;align-items:center;gap:16px;min-height:148px;flex-wrap:wrap}
 @media(max-width:650px){.shape-library{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+
+.navigation-preview{padding:0;margin-top:28px;overflow:hidden}
+.navigation-preview-bar{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.navigation-preview-bar button{width:44px;height:44px}.navigation-preview-context{margin-left:auto;font-size:12px}
+.navigation-preview-body{padding:30px;max-width:580px;min-height:210px}
+dialog.navigation-drawer{width:min(296px,calc(100% - 24px));height:100dvh;max-height:100dvh;margin:0 auto 0 0;border-radius:0 24px 24px 0;animation:drawer-enter var(--motion-enter) var(--motion-ease)}
+.navigation-drawer .dialog-content{height:100%;padding:22px;animation:none}
+.navigation-drawer-layout{display:flex;flex-direction:column;gap:30px;min-height:100%}
+.navigation-workspace{display:flex;gap:12px;align-items:center}.navigation-workspace .ui-field{flex:1;min-width:0}.navigation-workspace select{font-size:14px}
+.navigation-drawer nav{display:grid;gap:6px}
+.navigation-drawer nav button,.navigation-drawer footer button{width:100%;min-height:46px;justify-content:flex-start;gap:14px;padding:12px 16px;border-radius:16px}
+.navigation-drawer [aria-current=page]{background:var(--wash);font-weight:600}
+.navigation-drawer footer{margin-top:auto;padding-top:24px;border-top:1px solid var(--line)}
+.navigation-drawer footer small{display:block;padding:18px 16px 0;font-size:11px}
+@keyframes drawer-enter{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+
