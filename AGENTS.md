@@ -40,4 +40,6 @@ Whenever updating API service hooks, RTK Query endpoints, data models, or authen
    - **NEVER merge branches into `dev`, `stage`, `staging`, `main`, or `master`**.
    - Merges into base branches must strictly happen via Pull Requests (PRs) created by the user with descriptions.
    - All agent work must be committed and kept on dedicated feature branches (e.g., `feat/...`, `fix/...`).
-
+5. **Application Execution Policy**:
+   - **DO NOT keep dev servers or applications running in the background**.
+   - You may compile, build, lint, and run automated tests, but do NOT launch or leave running applications/servers. The user runs and monitors the applications themselves.
